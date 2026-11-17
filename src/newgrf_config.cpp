@@ -18,14 +18,11 @@
 #include "progress.h"
 #include "video/video_driver.hpp"
 #include "string_func.h"
-#include "strings_func.h"
 #include "textfile_gui.h"
-#include "thread.h"
 #include "newgrf_config.h"
 #include "newgrf_text.h"
 
 #include "fileio_func.h"
-#include "fios.h"
 
 #include "safeguards.h"
 
@@ -193,7 +190,7 @@ void GRFConfig::SetValue(const GRFParameterInfo &info, uint32_t value)
 		SB(this->param[info.param_nr], info.first_bit, info.num_bit, value);
 	}
 
-	SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_NEWGRF_STATE);
+	SetWindowDirty(WindowClass::GameOptions, GameOptionsWindowNumber::NewGRFState);
 }
 
 /**
@@ -237,7 +234,7 @@ size_t GRFGetSizeOfDataSection(FileHandle &f)
 			/* Valid container version 2, get data section size. */
 			size_t offset = (static_cast<size_t>(data[13]) << 24) | (static_cast<size_t>(data[12]) << 16) | (static_cast<size_t>(data[11]) << 8) | static_cast<size_t>(data[10]);
 			if (offset >= 1 * 1024 * 1024 * 1024) {
-				Debug(grf, 0, "Unexpectedly large offset for NewGRF");
+				Debug(Facility::Grf, Severity::Critical, "Unexpectedly large offset for NewGRF");
 				/* Having more than 1 GiB of data is very implausible. Mostly because then
 				 * all pools in OpenTTD are flooded already. Or it's just Action C all over.
 				 * In any case, the offsets to graphics will likely not work either. */
@@ -304,7 +301,7 @@ bool FillGRFDetails(GRFConfig &config, bool is_static, Subdirectory subdir)
 	config.FinalizeParameterInfo();
 
 	/* Skip if the grfid is 0 (not read) or if it is an internal GRF */
-	if (config.ident.grfid == 0 || config.flags.Test(GRFConfigFlag::System)) return false;
+	if (config.ident.grfid.Empty() || config.flags.Test(GRFConfigFlag::System)) return false;
 
 	if (is_static) {
 		/* Perform a 'safety scan' for static GRFs */
@@ -438,7 +435,7 @@ GRFListCompatibility IsGoodGRFConfigList(GRFConfigList &grfconfig)
 			 * same grfid, as it most likely is compatible */
 			f = FindGRFConfig(c->ident.grfid, FindGRFConfigMode::Compatible, nullptr, c->version);
 			if (f != nullptr) {
-				Debug(grf, 1, "NewGRF {:08X} ({}) not found; checksum {}. Compatibility mode on", std::byteswap(c->ident.grfid), c->filename, FormatArrayAsHex(c->ident.md5sum));
+				Debug(Facility::Grf, Severity::Error, "NewGRF {} ({}) not found; checksum {}. Compatibility mode on", FormatArrayAsHex(c->ident.grfid), c->filename, FormatArrayAsHex(c->ident.md5sum));
 				if (!c->flags.Test(GRFConfigFlag::Compatible)) {
 					/* Preserve original_md5sum after it has been assigned */
 					c->flags.Set(GRFConfigFlag::Compatible);
@@ -451,13 +448,13 @@ GRFListCompatibility IsGoodGRFConfigList(GRFConfigList &grfconfig)
 			}
 
 			/* No compatible grf was found, mark it as disabled */
-			Debug(grf, 0, "NewGRF {:08X} ({}) not found; checksum {}", std::byteswap(c->ident.grfid), c->filename, FormatArrayAsHex(c->ident.md5sum));
+			Debug(Facility::Grf, Severity::Critical, "NewGRF {} ({}) not found; checksum {}", FormatArrayAsHex(c->ident.grfid), c->filename, FormatArrayAsHex(c->ident.md5sum));
 
 			c->status = GRFStatus::NotFound;
 			res = GRFListCompatibility::NotFound;
 		} else {
 compatible_grf:
-			Debug(grf, 1, "Loading GRF {:08X} from {}", std::byteswap(f->ident.grfid), f->filename);
+			Debug(Facility::Grf, Severity::Error, "Loading GRF {} from {}", FormatArrayAsHex(f->ident.grfid), f->filename);
 			/* The filename could be the filename as in the savegame. As we need
 			 * to load the GRF here, we need the correct filename, so overwrite that
 			 * in any case and set the name and info when it is not set already.
@@ -558,19 +555,19 @@ void DoScanNewGRFFiles(NewGRFScanCallback *callback)
 	ClearGRFConfigList(_all_grfs);
 	TarScanner::DoScan(TarScanner::Mode::NewGRF);
 
-	Debug(grf, 1, "Scanning for NewGRFs");
+	Debug(Facility::Grf, Severity::Error, "Scanning for NewGRFs");
 	uint num = GRFFileScanner::DoScan();
 
-	Debug(grf, 1, "Scan complete, found {} files", num);
+	Debug(Facility::Grf, Severity::Error, "Scan complete, found {} files", num);
 	std::ranges::sort(_all_grfs, GRFSorter);
 	NetworkAfterNewGRFScan();
 
 	/* Yes... these are the NewGRF windows */
-	InvalidateWindowClassesData(WC_SAVELOAD, 0, true);
-	InvalidateWindowData(WC_GAME_OPTIONS, WN_GAME_OPTIONS_NEWGRF_STATE, GOID_NEWGRF_RESCANNED, true);
+	InvalidateWindowClassesData(WindowClass::SaveLoad, 0, true);
+	InvalidateWindowData(WindowClass::GameOptions, GameOptionsWindowNumber::NewGRFState, GOID_NEWGRF_RESCANNED, true);
 	if (!_exit_game && callback != nullptr) callback->OnNewGRFsScanned();
 
-	CloseWindowByClass(WC_MODAL_PROGRESS);
+	CloseWindowByClass(WindowClass::ModalProgress);
 	SetModalProgress(false);
 	MarkWholeScreenDirty();
 }
@@ -597,7 +594,7 @@ void ScanNewGRFFiles(NewGRFScanCallback *callback)
  * @param desired_version Requested version
  * @return The matching grf, if it exists in #_all_grfs, else \c nullptr.
  */
-const GRFConfig *FindGRFConfig(uint32_t grfid, FindGRFConfigMode mode, const MD5Hash *md5sum, uint32_t desired_version)
+const GRFConfig *FindGRFConfig(GrfID grfid, FindGRFConfigMode mode, const MD5Hash *md5sum, uint32_t desired_version)
 {
 	assert((mode == FindGRFConfigMode::Exact) != (md5sum == nullptr));
 	const GRFConfig *best = nullptr;
@@ -623,9 +620,9 @@ const GRFConfig *FindGRFConfig(uint32_t grfid, FindGRFConfigMode mode, const MD5
  * @param mask  GRFID mask to allow for partial matching.
  * @return The grf config, if it exists, else \c nullptr.
  */
-GRFConfig *GetGRFConfig(uint32_t grfid, uint32_t mask)
+GRFConfig *GetGRFConfig(GrfID grfid, uint32_t mask)
 {
-	auto it = std::ranges::find_if(_grfconfig, [grfid, mask](const auto &c) { return (c->ident.grfid & mask) == (grfid & mask); });
+	auto it = std::ranges::find_if(_grfconfig, [grfid, mask](const auto &c) { return (FlattenNewGRFLabel(c->ident.grfid) & mask) == (FlattenNewGRFLabel(grfid) & mask); });
 	if (it != std::end(_grfconfig)) return it->get();
 
 	return nullptr;

@@ -8,11 +8,9 @@
 /** @file main_gui.cpp Handling of the main viewport. */
 
 #include "stdafx.h"
-#include "currency.h"
 #include "spritecache.h"
 #include "window_gui.h"
 #include "window_func.h"
-#include "textbuf_gui.h"
 #include "viewport_func.h"
 #include "command_func.h"
 #include "console_gui.h"
@@ -21,10 +19,7 @@
 #include "map_func.h"
 #include "sound_func.h"
 #include "transparency.h"
-#include "strings_func.h"
 #include "zoom_func.h"
-#include "company_base.h"
-#include "company_func.h"
 #include "toolbar_gui.h"
 #include "statusbar_gui.h"
 #include "linkgraph/linkgraph_gui.h"
@@ -36,7 +31,7 @@
 #include "timer/timer.h"
 #include "timer/timer_window.h"
 
-#include "saveload/saveload.h"
+#include "saveload/saveload_func.h"
 
 #include "widgets/main_widget.h"
 
@@ -143,7 +138,7 @@ void ZoomInOrOutToCursorWindow(bool in, Window *w)
 {
 	assert(w != nullptr);
 
-	if (_game_mode != GM_MENU) {
+	if (_game_mode != GameMode::Menu) {
 		if ((in && w->viewport->zoom <= _settings_client.gui.zoom_min) || (!in && w->viewport->zoom >= _settings_client.gui.zoom_max)) return;
 
 		Point pt = GetTileZoomCenterWindow(in, w);
@@ -157,7 +152,7 @@ void ZoomInOrOutToCursorWindow(bool in, Window *w)
 
 void FixTitleGameZoom(int zoom_adjust)
 {
-	if (_game_mode != GM_MENU) return;
+	if (_game_mode != GameMode::Menu) return;
 
 	Viewport &vp = *GetMainWindow()->viewport;
 
@@ -256,7 +251,7 @@ struct MainWindow : Window
 	void OnPaint() override
 	{
 		this->DrawWidgets();
-		if (_game_mode == GM_MENU) {
+		if (_game_mode == GameMode::Menu) {
 			static const std::initializer_list<SpriteID> title_sprites = {SPR_OTTD_O, SPR_OTTD_P, SPR_OTTD_E, SPR_OTTD_N, SPR_OTTD_T, SPR_OTTD_T, SPR_OTTD_D};
 			uint letter_spacing = ScaleGUITrad(10);
 			int name_width = static_cast<int>(std::size(title_sprites) - 1) * letter_spacing;
@@ -272,7 +267,7 @@ struct MainWindow : Window
 			}
 
 			int text_y = this->height - GetCharacterHeight(FontSize::Normal) * 2;
-			DrawString(0, this->width - 1, text_y, STR_INTRO_VERSION, TC_WHITE, SA_CENTER);
+			DrawString(0, this->width - 1, text_y, STR_INTRO_VERSION, TextColour::White, {AlignmentH::Centre, AlignmentV::Middle});
 		}
 	}
 
@@ -280,45 +275,45 @@ struct MainWindow : Window
 	{
 		if (hotkey == GHK_QUIT) {
 			HandleExitGameRequest();
-			return ES_HANDLED;
+			return EventState::Handled;
 		}
 
 		/* Disable all key shortcuts, except quit shortcuts when
 		 * generating the world, otherwise they create threading
 		 * problem during the generating, resulting in random
 		 * assertions that are hard to trigger and debug */
-		if (HasModalProgress()) return ES_NOT_HANDLED;
+		if (HasModalProgress()) return EventState::NotHandled;
 
 		switch (hotkey) {
 			case GHK_ABANDON:
 				/* No point returning from the main menu to itself */
-				if (_game_mode == GM_MENU) return ES_HANDLED;
+				if (_game_mode == GameMode::Menu) return EventState::Handled;
 				if (_settings_client.gui.autosave_on_exit) {
 					DoExitSave();
-					_switch_mode = SM_MENU;
+					_switch_mode = SwitchMode::Menu;
 				} else {
 					AskExitToGameMenu();
 				}
-				return ES_HANDLED;
+				return EventState::Handled;
 
 			case GHK_CONSOLE:
 				IConsoleSwitch();
-				return ES_HANDLED;
+				return EventState::Handled;
 
 			case GHK_BOUNDING_BOXES:
 				ToggleBoundingBoxes();
-				return ES_HANDLED;
+				return EventState::Handled;
 
 			case GHK_DIRTY_BLOCKS:
 				ToggleDirtyBlocks();
-				return ES_HANDLED;
+				return EventState::Handled;
 
 			case GHK_WIDGET_OUTLINES:
 				ToggleWidgetOutlines();
-				return ES_HANDLED;
+				return EventState::Handled;
 		}
 
-		if (_game_mode == GM_MENU) return ES_NOT_HANDLED;
+		if (_game_mode == GameMode::Menu) return EventState::NotHandled;
 
 		switch (hotkey) {
 			case GHK_CENTER:
@@ -410,21 +405,21 @@ struct MainWindow : Window
 
 			case GHK_CHAT_SERVER: // send text to the server
 				if (_networking && !_network_server) {
-					ShowNetworkChatQueryWindow(NetworkChatDestinationType::Client, CLIENT_ID_SERVER);
+					ShowNetworkChatQueryWindow(NetworkChatDestinationType::Client, to_underlying(ClientID::Server));
 				}
 				break;
 
 			case GHK_CLOSE_NEWS: // close active news window
-				if (!HideActiveNewsMessage()) return ES_NOT_HANDLED;
+				if (!HideActiveNewsMessage()) return EventState::NotHandled;
 				break;
 
 			case GHK_CLOSE_ERROR: // close active error window
-				if (!HideActiveErrorMessage()) return ES_NOT_HANDLED;
+				if (!HideActiveErrorMessage()) return EventState::NotHandled;
 				break;
 
-			default: return ES_NOT_HANDLED;
+			default: return EventState::NotHandled;
 		}
-		return ES_HANDLED;
+		return EventState::Handled;
 	}
 
 	void OnScroll(Point delta) override
@@ -475,7 +470,7 @@ struct MainWindow : Window
 	{
 		if (!gui_scope) return;
 		/* Forward the message to the appropriate toolbar (ingame or scenario editor) */
-		InvalidateWindowData(WC_MAIN_TOOLBAR, 0, data, true);
+		InvalidateWindowData(WindowClass::MainToolbar, 0, data, true);
 	}
 
 	static inline HotkeyList hotkeys{"global", {
@@ -528,7 +523,7 @@ struct MainWindow : Window
 /** Window definition for the main window. */
 static WindowDesc _main_window_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_MAIN_WINDOW, WC_NONE,
+	WindowClass::MainWindow, WindowClass::None,
 	WindowDefaultFlag::NoClose,
 	_nested_main_window_widgets,
 	&MainWindow::hotkeys
@@ -553,10 +548,10 @@ void ShowSelectGameWindow();
  */
 void SetupColoursAndInitialWindow()
 {
-	for (Colours i = Colours::Begin; i != Colours::End; i++) {
+	for (Colours i : EnumRange(Colours::End)) {
 		const uint8_t *b = GetNonSprite(GetColourPalette(i), SpriteType::Recolour) + 1;
 		assert(b != nullptr);
-		for (Shade j = Shade::Begin; j < Shade::End; j++) {
+		for (Shade j : EnumRange(Shade::End)) {
 			SetColourGradient(i, j, PixelColour{b[0xC6 + to_underlying(j)]});
 		}
 	}
@@ -566,12 +561,12 @@ void SetupColoursAndInitialWindow()
 	/* XXX: these are not done */
 	switch (_game_mode) {
 		default: NOT_REACHED();
-		case GM_MENU:
+		case GameMode::Menu:
 			ShowSelectGameWindow();
 			break;
 
-		case GM_NORMAL:
-		case GM_EDITOR:
+		case GameMode::Normal:
+		case GameMode::Editor:
 			ShowVitalWindows();
 			break;
 	}
@@ -585,7 +580,7 @@ void ShowVitalWindows()
 	AllocateToolbar();
 
 	/* Status bad only for normal games */
-	if (_game_mode == GM_EDITOR) return;
+	if (_game_mode == GameMode::Editor) return;
 
 	ShowStatusBar();
 }

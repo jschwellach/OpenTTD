@@ -15,6 +15,7 @@
 #include "engine_type.h"
 #include "industry_type.h"
 #include "gfx_type.h"
+#include "settings_type.h"
 #include "sound_type.h"
 #include "station_type.h"
 #include "strings_type.h"
@@ -33,7 +34,9 @@ enum class NewsType : uint8_t {
 	AccidentOther, ///< An accident or disaster has occurred
 	CompanyInfo, ///< Company info (new companies, bankruptcy messages)
 	IndustryOpen, ///< Opening of industries
-	IndustryClose, ///< Closing of industries
+	IndustryCloseCompany, ///< Closing of industries serviced by local company
+	IndustryCloseOther, ///< Closing of industries serviced by competitor(s)
+	IndustryCloseNobody, ///< Other industry closing
 	Economy, ///< Economic changes (recession, industry up/dowm)
 	IndustryCompany, ///< Production changes of industry serviced by local company
 	IndustryOther, ///< Production changes of industry serviced by competitor(s)
@@ -92,16 +95,9 @@ enum class NewsFlag : uint8_t {
 	Shaded, ///< News item uses shaded colours.
 	VehicleParam0, ///< String param 0 contains a vehicle ID. (special autoreplace behaviour)
 };
-using NewsFlags = EnumBitSet<NewsFlag, uint8_t>;
 
-/**
- * News display options
- */
-enum class NewsDisplay : uint8_t {
-	Off, ///< Only show a reminder in the status bar
-	Summary, ///< Show ticker
-	Full, ///< Show newspaper
-};
+/** Bitset of \c NewsFlag elements. */
+using NewsFlags = EnumBitSet<NewsFlag, uint8_t>;
 
 /**
  * Per-NewsType data
@@ -117,7 +113,7 @@ struct NewsTypeData {
 	 * @param age The maximum age for these messages.
 	 * @param sound The sound to play.
 	 */
-	NewsTypeData(std::string_view name, uint8_t age, SoundFx sound) :
+	constexpr NewsTypeData(std::string_view name, uint8_t age, SoundFx sound) :
 		name(name),
 		age(age),
 		sound(sound)

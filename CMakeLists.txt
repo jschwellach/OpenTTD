@@ -5,7 +5,7 @@ if(NOT BINARY_NAME)
 endif()
 
 project(${BINARY_NAME}
-    VERSION 16.0
+    VERSION 17.0
     LANGUAGES CXX
 )
 
@@ -142,11 +142,12 @@ endif()
 if(NOT OPTION_DEDICATED)
     if(WIN32)
         find_package(Xaudio2)
+        find_package(D3D11)
     else()
         find_package(Allegro)
         if(NOT APPLE)
             find_package(Freetype)
-            find_package(SDL2)
+            find_package(SDL3)
             find_package(Fluidsynth)
             if(Freetype_FOUND)
                 find_package(Fontconfig)
@@ -156,6 +157,7 @@ if(NOT OPTION_DEDICATED)
         endif()
     endif()
     find_package(OpusFile)
+    find_package(Soxr)
 endif()
 if(APPLE)
     enable_language(OBJCXX)
@@ -186,10 +188,10 @@ check_ipo_supported(RESULT IPO_FOUND)
 show_options()
 
 if(UNIX AND NOT APPLE AND NOT OPTION_DEDICATED)
-    if(NOT SDL2_FOUND AND NOT ALLEGRO_FOUND)
-        message(FATAL_ERROR "SDL2 or Allegro is required for this platform")
+    if(NOT SDL3_FOUND AND NOT ALLEGRO_FOUND)
+        message(FATAL_ERROR "SDL3 or Allegro is required for this platform")
     endif()
-    if(HARFBUZZ_FOUND AND NOT ICU_i18n_FOUND)
+    if(HARFBUZZ_FOUND AND NOT ICU_I18N_FOUND)
         message(WARNING "HarfBuzz depends on ICU i18n to function; HarfBuzz will be disabled")
     endif()
     if(NOT HARFBUZZ_FOUND)
@@ -322,21 +324,22 @@ endif()
 
 if(NOT OPTION_DEDICATED)
     link_package(Fluidsynth)
-    link_package(SDL2 TARGET SDL2::SDL2)
+    link_package(SDL3 TARGET SDL3::SDL3)
     link_package(Allegro)
     link_package(FREETYPE TARGET Freetype::Freetype)
     link_package(Fontconfig TARGET Fontconfig::Fontconfig)
     link_package(Harfbuzz TARGET harfbuzz::harfbuzz)
-    link_package(ICU_i18n)
-    link_package(ICU_uc)
+    link_package(ICU_I18N TARGET ICU::i18n)
+    link_package(ICU_UC TARGET ICU::uc)
     link_package(OpusFile TARGET OpusFile::opusfile)
+    link_package(Soxr TARGET Soxr::soxr)
 
-    if(SDL2_FOUND AND OPENGL_FOUND AND UNIX)
-        # SDL2 dynamically loads OpenGL if needed, so do not link to OpenGL when
+    if(SDL3_FOUND AND OPENGL_FOUND AND UNIX)
+        # SDL3 dynamically loads OpenGL if needed, so do not link to OpenGL when
         # on Linux. For Windows, we need to link to OpenGL as we also have a win32
         # driver using it.
         add_definitions(-DWITH_OPENGL)
-        message(STATUS "OpenGL found -- -DWITH_OPENGL -- (via SDL2)")
+        message(STATUS "OpenGL found -- -DWITH_OPENGL -- (via SDL3)")
     else()
         link_package(OpenGL TARGET OpenGL::GL)
     endif()
@@ -370,7 +373,7 @@ if(EMSCRIPTEN)
     add_definitions(-s DISABLE_EXCEPTION_CATCHING=0)
 
     # Export functions to Javascript.
-    target_link_libraries(WASM::WASM INTERFACE "-s EXPORTED_FUNCTIONS='[\"_main\", \"_em_openttd_add_server\"]' -s EXPORTED_RUNTIME_METHODS='[\"cwrap\"]'")
+    target_link_libraries(WASM::WASM INTERFACE "-s EXPORTED_FUNCTIONS='[\"_main\", \"_em_openttd_add_server\"]' -s EXPORTED_RUNTIME_METHODS='[\"cwrap\", \"HEAPU8\"]'")
 
     # Preload all the files we generate during build.
     # As we do not compile with FreeType / FontConfig, we also have no way to

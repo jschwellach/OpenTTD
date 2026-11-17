@@ -17,16 +17,16 @@
 #include "../safeguards.h"
 
 static const SaveLoad _engine_renew_desc[] = {
-	    SLE_VAR(EngineRenew, from,     SLE_UINT16),
-	    SLE_VAR(EngineRenew, to,       SLE_UINT16),
+	SaveLoad::Variable<VarFileType::U16>("from", SLE_OBJECT_ADDRESS(EngineRenew, from)),
+	SaveLoad::Variable<VarFileType::U16>("to", SLE_OBJECT_ADDRESS(EngineRenew, to)),
 
-	    SLE_REF(EngineRenew, next,     REF_ENGINE_RENEWS),
-	SLE_CONDVAR(EngineRenew, group_id, SLE_UINT16, SLV_60, SL_MAX_VERSION),
-	SLE_CONDVAR(EngineRenew, replace_when_old, SLE_BOOL, SLV_175, SL_MAX_VERSION),
+	SaveLoad::Reference<SLRefType::EngineRenew>("next", SLE_OBJECT_ADDRESS(EngineRenew, next)),
+	SaveLoad::Variable<VarFileType::U16>("group_id", SLE_OBJECT_ADDRESS(EngineRenew, group_id), SaveLoadVersion::VehicleGroups),
+	SaveLoad::Variable<VarFileType::Bool>("replace_when_old", SLE_OBJECT_ADDRESS(EngineRenew, replace_when_old), SaveLoadVersion::AutoreplaceWhenOldTreeLimit),
 };
 
 struct ERNWChunkHandler : ChunkHandler {
-	ERNWChunkHandler() : ChunkHandler('ERNW', CH_TABLE) {}
+	ERNWChunkHandler() : ChunkHandler("ERNW", ChunkType::Table) {}
 
 	void Save() const override
 	{
@@ -49,9 +49,9 @@ struct ERNWChunkHandler : ChunkHandler {
 			SlObject(er, slt);
 
 			/* Advanced vehicle lists, ungrouped vehicles got added */
-			if (IsSavegameVersionBefore(SLV_60)) {
+			if (IsSavegameVersionBefore(SaveLoadVersion::VehicleGroups)) {
 				er->group_id = ALL_GROUP;
-			} else if (IsSavegameVersionBefore(SLV_71)) {
+			} else if (IsSavegameVersionBefore(SaveLoadVersion::UngroupedVehicles)) {
 				if (er->group_id == DEFAULT_GROUP) er->group_id = ALL_GROUP;
 			}
 		}

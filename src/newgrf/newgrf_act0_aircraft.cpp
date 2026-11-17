@@ -50,7 +50,7 @@ static ChangeInfoResult AircraftVehicleChangeInfo(uint first, uint last, int pro
 				if (IsValidNewGRFImageIndex<VehicleType::Aircraft>(spriteid)) {
 					avi->image_index = spriteid;
 				} else {
-					GrfMsg(1, "AircraftVehicleChangeInfo: Invalid Sprite {} specified, ignoring", orig_spriteid);
+					GrfMsg(Severity::Error, "AircraftVehicleChangeInfo: Invalid Sprite {} specified, ignoring", orig_spriteid);
 					avi->image_index = 0;
 				}
 				break;
@@ -120,7 +120,7 @@ static ChangeInfoResult AircraftVehicleChangeInfo(uint first, uint last, int pro
 				break;
 
 			case 0x17: // Miscellaneous flags
-				ei->misc_flags = static_cast<EngineMiscFlags>(buf.ReadByte());
+				ei->misc_flags = EngineMiscFlags{buf.ReadByte()};
 				_loaded_newgrf_features.has_2CC |= ei->misc_flags.Test(EngineMiscFlag::Uses2CC);
 				break;
 
@@ -166,7 +166,7 @@ static ChangeInfoResult AircraftVehicleChangeInfo(uint first, uint last, int pro
 				break;
 
 			case 0x20: // Engine variant
-				ei->variant_id = static_cast<EngineID>(buf.ReadWord());
+				ei->variant_id = EngineID{buf.ReadWord()};
 				break;
 
 			case 0x21: // Extra miscellaneous flags

@@ -33,6 +33,8 @@ enum class WaterTileType : uint8_t {
 	Coast = 1, ///< Coast.
 	Lock = 2, ///< Water lock.
 	Depot = 3, ///< Water Depot.
+	ClearRocks = 4, ///< Rocks on water.
+	CoastRocks = 5, ///< Rocks on coast.
 };
 
 /** classes of water (for #WaterTileType::Clear water tile type). */
@@ -197,12 +199,13 @@ inline bool IsWaterTile(Tile t)
 /**
  * Is it a coast tile?
  * @param t Water tile to query.
- * @return \c true if it is a sea water tile.
+ * @return \c true if it is a coast or rocky coast tile.
  * @pre IsTileType(t, TileType::Water)
  */
 inline bool IsCoast(Tile t)
 {
-	return GetWaterTileType(t) == WaterTileType::Coast;
+	WaterTileType wtt = GetWaterTileType(t);
+	return wtt == WaterTileType::Coast || wtt == WaterTileType::CoastRocks;
 }
 
 /**
@@ -245,7 +248,7 @@ inline bool IsShipDepotTile(Tile t)
 inline Axis GetShipDepotAxis(Tile t)
 {
 	assert(IsShipDepotTile(t));
-	return (Axis)GB(t.m5(), WBL_DEPOT_AXIS, 1);
+	return static_cast<Axis>(GB(t.m5(), WBL_DEPOT_AXIS, 1));
 }
 
 /**
@@ -316,7 +319,7 @@ inline bool IsLock(Tile t)
 inline DiagDirection GetLockDirection(Tile t)
 {
 	assert(IsLock(t));
-	return (DiagDirection)GB(t.m5(), WBL_LOCK_ORIENT_BEGIN, WBL_LOCK_ORIENT_COUNT);
+	return static_cast<DiagDirection>(GB(t.m5(), WBL_LOCK_ORIENT_BEGIN, WBL_LOCK_ORIENT_COUNT));
 }
 
 /**
@@ -381,8 +384,9 @@ inline bool IsDockingTile(Tile t)
 /**
  * Helper function to make a coast tile.
  * @param t The tile to change into water
+ * @param rocks Whether the tile should have rocks on.
  */
-inline void MakeShore(Tile t)
+inline void MakeShore(Tile t, bool rocks = false)
 {
 	SetTileType(t, TileType::Water);
 	SetTileOwner(t, OWNER_WATER);
@@ -392,7 +396,7 @@ inline void MakeShore(Tile t)
 	t.m3() = 0;
 	t.m4() = 0;
 	t.m5() = 0;
-	SetWaterTileType(t, WaterTileType::Coast);
+	SetWaterTileType(t, rocks ? WaterTileType::CoastRocks : WaterTileType::Coast);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
 	t.m8() = 0;
@@ -404,8 +408,9 @@ inline void MakeShore(Tile t)
  * @param o The owner of the water
  * @param wc The class of water the tile has to be
  * @param random_bits Eventual random bits to be set for this tile
+ * @param rocks Whether the tile should have rocks on.
  */
-inline void MakeWater(Tile t, Owner o, WaterClass wc, uint8_t random_bits)
+inline void MakeWater(Tile t, Owner o, WaterClass wc, uint8_t random_bits, bool rocks = false)
 {
 	SetTileType(t, TileType::Water);
 	SetTileOwner(t, o);
@@ -415,7 +420,7 @@ inline void MakeWater(Tile t, Owner o, WaterClass wc, uint8_t random_bits)
 	t.m3() = 0;
 	t.m4() = random_bits;
 	t.m5() = 0;
-	SetWaterTileType(t, WaterTileType::Clear);
+	SetWaterTileType(t, rocks ? WaterTileType::ClearRocks : WaterTileType::Clear);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
 	t.m8() = 0;
@@ -424,10 +429,11 @@ inline void MakeWater(Tile t, Owner o, WaterClass wc, uint8_t random_bits)
 /**
  * Make a sea tile.
  * @param t The tile to change into sea
+ * @param rocks Whether the tile should have rocks on.
  */
-inline void MakeSea(Tile t)
+inline void MakeSea(Tile t, bool rocks = false)
 {
-	MakeWater(t, OWNER_WATER, WaterClass::Sea, 0);
+	MakeWater(t, OWNER_WATER, WaterClass::Sea, 0, rocks);
 }
 
 /**
@@ -470,7 +476,7 @@ inline void MakeShipDepot(Tile t, Owner o, DepotID did, DepotPart part, Axis a, 
 	t.m2() = did.base();
 	t.m3() = 0;
 	t.m4() = 0;
-	t.m5() = to_underlying(part) << WBL_DEPOT_PART | a << WBL_DEPOT_AXIS;
+	t.m5() = to_underlying(part) << WBL_DEPOT_PART | to_underlying(a) << WBL_DEPOT_AXIS;
 	SetWaterTileType(t, WaterTileType::Depot);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
@@ -495,7 +501,7 @@ inline void MakeLockTile(Tile t, Owner o, LockPart part, DiagDirection dir, Wate
 	t.m2() = 0;
 	t.m3() = 0;
 	t.m4() = 0;
-	t.m5() = to_underlying(part) << WBL_LOCK_PART_BEGIN | dir << WBL_LOCK_ORIENT_BEGIN;
+	t.m5() = to_underlying(part) << WBL_LOCK_PART_BEGIN | to_underlying(dir) << WBL_LOCK_ORIENT_BEGIN;
 	SetWaterTileType(t, WaterTileType::Lock);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;

@@ -5,12 +5,12 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file sdl2_default_v.h Default backend of the SDL2 video driver. */
+/** @file sdl3_default_v.h Default backend of the SDL3 video driver. */
 
-#ifndef VIDEO_SDL2_DEFAULT_H
-#define VIDEO_SDL2_DEFAULT_H
+#ifndef VIDEO_SDL3_DEFAULT_H
+#define VIDEO_SDL3_DEFAULT_H
 
-#include "sdl2_v.h"
+#include "sdl3_v.h"
 
 /** The SDL video driver using default SDL backend. */
 class VideoDriver_SDL_Default : public VideoDriver_SDL_Base {
@@ -32,8 +32,9 @@ private:
 /** Factory for the SDL video driver. */
 class FVideoDriver_SDL_Default : public DriverFactoryBase {
 public:
+	/** Create the factory. */
 	FVideoDriver_SDL_Default() : DriverFactoryBase(Driver::Type::Video, 5, "sdl", "SDL Video Driver") {}
 	std::unique_ptr<Driver> CreateInstance() const override { return std::make_unique<VideoDriver_SDL_Default>(); }
 };
 
-#endif /* VIDEO_SDL2_DEFAULT_H */
+#endif /* VIDEO_SDL3_DEFAULT_H */

@@ -11,7 +11,7 @@
 #define PATHFINDER_FUNC_H
 
 #include "../tile_cmd.h"
-#include "../waypoint_base.h"
+#include "../base_station_base.h"
 
 /**
  * Calculates the tile of given station that is closest to a given tile
@@ -28,7 +28,7 @@ inline TileIndex CalcClosestStationTile(StationID station, TileIndex tile, Stati
 	TileArea ta = st->GetTileArea(station_type);
 
 	/* If the rail station is (temporarily) not present, use the station sign to drive near the station */
-	if (ta.tile == INVALID_TILE) return st->xy;
+	if (ta.IsEmpty()) return st->xy;
 
 	uint minx = TileX(ta.tile);  // topmost corner of station
 	uint miny = TileY(ta.tile);
@@ -47,8 +47,8 @@ inline TileIndex CalcClosestStationTile(StationID station, TileIndex tile, Stati
 }
 
 /**
- * Wrapper around GetTileTrackStatus() and TrackStatusToTrackdirBits(), as for
- * single tram bits GetTileTrackStatus() returns 0. The reason for this is
+ * Wrapper around GetTileTrackStatus(), as for single tram bits
+ * GetTileTrackStatus() returns 0. The reason for this is
  * that there are no half-tile TrackBits in OpenTTD.
  * This tile, however, is a valid tile for trams, one on which they can
  * reverse safely. To "fix" this, pretend that if we are on a half-tile, we
@@ -61,20 +61,20 @@ inline TileIndex CalcClosestStationTile(StationID station, TileIndex tile, Stati
  */
 inline TrackdirBits GetTrackdirBitsForRoad(TileIndex tile, RoadTramType rtt)
 {
-	TrackdirBits bits = TrackStatusToTrackdirBits(GetTileTrackStatus(tile, TRANSPORT_ROAD, rtt));
+	TrackdirBits bits = GetTileTrackStatus(tile, TransportType::Road, rtt).trackdirs;
 
-	if (rtt == RoadTramType::Tram && bits == TRACKDIR_BIT_NONE) {
+	if (rtt == RoadTramType::Tram && bits.None()) {
 		if (IsNormalRoadTile(tile)) {
 			RoadBits rb = GetRoadBits(tile, RoadTramType::Tram);
 			switch (rb.base()) {
 				case RoadBits{RoadBit::NE}.base():
 				case RoadBits{RoadBit::SW}.base():
-					bits = TRACKDIR_BIT_X_NE | TRACKDIR_BIT_X_SW;
+					bits = {Trackdir::X_NE, Trackdir::X_SW};
 					break;
 
 				case RoadBits{RoadBit::NW}.base():
 				case RoadBits{RoadBit::SE}.base():
-					bits = TRACKDIR_BIT_Y_NW | TRACKDIR_BIT_Y_SE;
+					bits = {Trackdir::Y_NW, Trackdir::Y_SE};
 					break;
 
 				default: break;

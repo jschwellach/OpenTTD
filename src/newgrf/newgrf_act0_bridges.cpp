@@ -29,7 +29,7 @@ static ChangeInfoResult BridgeChangeInfo(uint first, uint last, int prop, ByteRe
 	ChangeInfoResult ret = ChangeInfoResult::Success;
 
 	if (last > MAX_BRIDGES) {
-		GrfMsg(1, "BridgeChangeInfo: Bridge {} is invalid, max {}, ignoring", last, MAX_BRIDGES);
+		GrfMsg(Severity::Error, "BridgeChangeInfo: Bridge {} is invalid, max {}, ignoring", last, MAX_BRIDGES);
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -74,7 +74,7 @@ static ChangeInfoResult BridgeChangeInfo(uint first, uint last, int prop, ByteRe
 
 				for (; numtables-- != 0; tableid++) {
 					if (tableid >= NUM_BRIDGE_PIECES) { // skip invalid data
-						GrfMsg(1, "BridgeChangeInfo: Table {} >= {}, skipping", tableid, NUM_BRIDGE_PIECES);
+						GrfMsg(Severity::Error, "BridgeChangeInfo: Table {} >= {}, skipping", tableid, NUM_BRIDGE_PIECES);
 						for (uint8_t sprite = 0; sprite < SPRITES_PER_BRIDGE_PIECE; sprite++) buf.ReadDWord();
 						continue;
 					}
@@ -125,8 +125,8 @@ static ChangeInfoResult BridgeChangeInfo(uint first, uint last, int prop, ByteRe
 				uint16_t tiles = buf.ReadExtendedByte();
 				for (uint j = 0; j != tiles; ++j) {
 					if (j < std::size(bridge->pillar_flags)) {
-						bridge->pillar_flags[j][AXIS_X] = BridgePillarFlags{buf.ReadByte()};
-						bridge->pillar_flags[j][AXIS_Y] = BridgePillarFlags{buf.ReadByte()};
+						bridge->pillar_flags[j][Axis::X] = BridgePillarFlags{buf.ReadByte()};
+						bridge->pillar_flags[j][Axis::Y] = BridgePillarFlags{buf.ReadByte()};
 					} else {
 						buf.ReadWord();
 					}

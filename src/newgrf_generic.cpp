@@ -54,10 +54,10 @@ struct GenericResolverObject : public ResolverObject {
 
 	GenericResolverObject(bool ai_callback, CallbackID callback = CBID_NO_CALLBACK);
 
-	ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, uint8_t relative = 0) override
+	ScopeResolver *GetScope(VarSpriteGroupScope scope = VarSpriteGroupScope::Self, uint8_t relative = 0) override
 	{
 		switch (scope) {
-			case VSG_SCOPE_SELF: return &this->generic_scope;
+			case VarSpriteGroupScope::Self: return &this->generic_scope;
 			default: return ResolverObject::GetScope(scope, relative);
 		}
 	}
@@ -109,7 +109,7 @@ void ResetGenericCallbacks()
 void AddGenericCallback(GrfSpecFeature feature, const GRFFile *file, const SpriteGroup *group)
 {
 	if (to_underlying(feature) >= std::size(_gcl)) {
-		GrfMsg(5, "AddGenericCallback: Unsupported feature 0x{:02X}", feature);
+		GrfMsg(Severity::Debug1, "AddGenericCallback: Unsupported feature 0x{:02X}", feature);
 		return;
 	}
 
@@ -139,7 +139,7 @@ void AddGenericCallback(GrfSpecFeature feature, const GRFFile *file, const Sprit
 		}
 	}
 
-	Debug(grf, 1, "Unhandled generic feature variable 0x{:02X}", variable);
+	this->ro.UnhandledVariable(variable);
 
 	available = false;
 	return UINT_MAX;

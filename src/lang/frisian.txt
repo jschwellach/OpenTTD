@@ -1018,9 +1018,9 @@ STR_RIVERS_MODERATE                                             :Middel
 STR_RIVERS_LOT                                                  :In protte
 
 ###length 3
-STR_DISASTER_NONE                                               :Gjin
-STR_DISASTER_REDUCED                                            :Minder
-STR_DISASTER_NORMAL                                             :Gewoan
+STR_BREAKDOWNS_NONE                                             :Gjin
+STR_BREAKDOWNS_REDUCED                                          :Minder
+STR_BREAKDOWNS_NORMAL                                           :Gewoan
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1,5
@@ -1313,6 +1313,8 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES_HELPTEXT               :By ynskeakeljen
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Ferfang âlde fiertugen automatysk: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :By ynskeakeljen wurden fiertugen dy't hast op harren ein binne automatyske ferfongen
 
@@ -1352,6 +1354,7 @@ STR_CONFIG_SETTING_TERRAIN_TYPE                                 :Terreintype: {S
 STR_CONFIG_SETTING_TERRAIN_TYPE_HELPTEXT                        :(Allinich TerraGenesis) Heuvelichhied fan it lânskip
 
 STR_CONFIG_SETTING_INDUSTRY_DENSITY                             :Yndustry tichtens: {STRING}
+
 
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE                        :Maksimale ôfstan fanôf de râne fan 'e kaart foar oaljeraffinaderijen: {STRING}
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE_HELPTEXT               :Oaljeraffinaderijen wurde allinnich tichtoan de râne fan 'e kaart bout
@@ -1499,12 +1502,7 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :Lit oankomst- e
 STR_CONFIG_SETTING_QUICKGOTO                                    :Flugge oanmaak fan fiertúchoarders: {STRING}
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :By it iepenjen fan it oardersfinster direktst it 'gean-nei'-ark iepenje
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Standert spoarsoart (by nij of bewarre spul): {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Spoartype om te selektearjen nei it starten fan in nij spul. 'Earst beskikber' selektearret it âldste spoartype, 'Lêst beskikber' selektearret it nijste spoartype en 'Meast brûkt' selektearret is spoartyp hokker it measte brûkt wurdt
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :Earst beskikber
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :Lêst beskikber
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :Meast brûkt
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :Lit reservearre spoar sjen: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :Jou reservearre spoaren in oare kleur om it makliker te meistjen problemen mei paad-basearre seinblokken te sjen
@@ -1613,8 +1611,8 @@ STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Lit in krantebe
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN                           :Iepenje fan yndustryen: {STRING}
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN_HELPTEXT                  :Lit in kranteberjocht sjen at der in nije yndustry iepend
 
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE                          :Slute fan yndustryen: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_HELPTEXT                 :Lit in kranteberjocht sjen at der in yndustry slút
+
+
 
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES                         :Feroarings yn 'e ekonomie: {STRING}
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES_HELPTEXT                :Lit in kranteberjocht sjen by feroarings yn de wrâldekonomy
@@ -2442,8 +2440,6 @@ STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_CAPTION                 :{WHITE}Alle ynd
 # Industry cargoes window
 STR_INDUSTRY_CARGOES_INDUSTRY_CAPTION                           :{WHITE}Yndustrykeatlings foar {STRING} yndustry
 STR_INDUSTRY_CARGOES_CARGO_CAPTION                              :{WHITE}Yndustrykeatlings foar {STRING} fracht
-STR_INDUSTRY_CARGOES_PRODUCERS                                  :produksje yndustry
-STR_INDUSTRY_CARGOES_CUSTOMERS                                  :{WHITE}Yndustry aksepteare
 STR_INDUSTRY_CARGOES_HOUSES                                     :{WHITE}Hûzen
 STR_INDUSTRY_DISPLAY_CHAIN                                      :{BLACK}Lit produksjeketting sjen
 STR_INDUSTRY_DISPLAY_CHAIN_TOOLTIP                              :{BLACK}Lit it oanbod en akseptaasje fan yndustrie sjen
@@ -2945,6 +2941,7 @@ STR_GOALS_PROGRESS                                              :{ORANGE}{STRING
 STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :Fraach
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :Ynformaasje
 STR_GOAL_QUESTION_CAPTION_WARNING                               :Warskôging
@@ -3483,9 +3480,7 @@ STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED                         :{BLACK}Gewicht:
 STR_VEHICLE_INFO_WEIGHT_POWER_MAX_SPEED_MAX_TE                  :{BLACK}Gewicht: {LTBLUE}{WEIGHT_SHORT} {BLACK}Krêft: {LTBLUE}{POWER}{BLACK} Maks. snelheid: {LTBLUE}{VELOCITY} {BLACK}Maks. lûkkrêft: {LTBLUE}{FORCE}
 
 
-STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Kapasiteit: {LTBLUE}Gjin{STRING}
 STR_VEHICLE_INFO_CAPACITY                                       :{BLACK}Kapasiteit: {LTBLUE}{CARGO_LONG}{STRING}
-STR_VEHICLE_INFO_CAPACITY_MULT                                  :{BLACK}Kapasiteit: {LTBLUE}{CARGO_LONG}{STRING} (x{NUM})
 STR_VEHICLE_INFO_CAPACITY_CAPACITY                              :{BLACK}Kapasiteit: {LTBLUE}{CARGO_LONG}, {CARGO_LONG}{STRING}
 
 STR_VEHICLE_INFO_FEEDER_CARGO_VALUE                             :{BLACK}Wikselje kredyt: {LTBLUE}{CURRENCY_LONG}
@@ -3505,19 +3500,17 @@ STR_QUERY_RENAME_AIRCRAFT_CAPTION                               :{WHITE}Namme fa
 STR_VEHICLE_DETAILS_TRAIN_ENGINE_BUILT_AND_VALUE                :{LTBLUE}{ENGINE}{BLACK}   Makke: {LTBLUE}{NUM}{BLACK} Wearde: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_DETAILS_TRAIN_WAGON_VALUE                           :{LTBLUE}{ENGINE}{BLACK}   Wearde: {LTBLUE}{CURRENCY_LONG}
 
+
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_TEXT                   :{BLACK}Totale kapasiteit fan dizze trein:
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY                        :{LTBLUE}- {CARGO_LONG} ({CARGO_SHORT})
-STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_MULT                   :{LTBLUE}- {CARGO_LONG} ({CARGO_SHORT}) (x{NUM})
+
 
 STR_VEHICLE_DETAILS_CARGO_EMPTY                                 :{LTBLUE}Leech
 STR_VEHICLE_DETAILS_CARGO_FROM                                  :{LTBLUE}{CARGO_LONG} fan {STATION}
-STR_VEHICLE_DETAILS_CARGO_FROM_MULT                             :{LTBLUE}{CARGO_LONG} fan {STATION} (x{NUM})
 
 STR_VEHICLE_DETAIL_TAB_CARGO                                    :{BLACK}Fracht
 STR_VEHICLE_DETAIL_TAB_INFORMATION                              :{BLACK}Ynformaasje
 STR_VEHICLE_DETAILS_TRAIN_INFORMATION_TOOLTIP                   :{BLACK}Treindetails sjen litte
-STR_VEHICLE_DETAIL_TAB_CAPACITIES                               :{BLACK}Kapasiteit
-STR_VEHICLE_DETAIL_TAB_TOTAL_CARGO                              :{BLACK}Totale Fracht
 
 STR_VEHICLE_DETAILS_TRAIN_ARTICULATED_RV_CAPACITY               :{BLACK}Kapasiteit: {LTBLUE}{STRING}
 

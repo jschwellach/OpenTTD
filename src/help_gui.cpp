@@ -12,8 +12,6 @@
 #include "window_gui.h"
 #include "textfile_gui.h"
 #include "fileio_func.h"
-#include "table/control_codes.h"
-#include "string_func.h"
 #include "openttd.h"
 #include "help_gui.h"
 
@@ -62,7 +60,7 @@ static std::optional<std::string> FindGameManualFilePath(std::string_view filena
 
 /** Window class displaying the game manual textfile viewer. */
 struct GameManualTextfileWindow : public TextfileWindow {
-	GameManualTextfileWindow(std::string_view filename, Subdirectory subdir) : TextfileWindow(nullptr, TFT_GAME_MANUAL)
+	GameManualTextfileWindow(std::string_view filename, Subdirectory subdir) : TextfileWindow(nullptr, TextfileType::GameManual)
 	{
 		this->ConstructWindow();
 
@@ -205,7 +203,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_helpwin_widgets = {
 /** Window definition for the help window. */
 static WindowDesc _helpwin_desc(
 	WindowPosition::Center, {}, 0, 0,
-	WC_HELPWIN, WC_NONE,
+	WindowClass::Help, WindowClass::None,
 	{},
 	_nested_helpwin_widgets
 );

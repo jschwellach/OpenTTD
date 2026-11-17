@@ -11,7 +11,6 @@
 #include "spriteloader/grf.hpp"
 #include "spriteloader/makeindexed.h"
 #include "error_func.h"
-#include "strings_func.h"
 #include "zoom_func.h"
 #include "settings_type.h"
 #include "blitter/factory.hpp"
@@ -45,7 +44,7 @@ SpriteCache *AllocateSpriteCache(uint index)
 		/* Add another 1024 items to the 'pool' */
 		uint items = Align(index + 1, 1024);
 
-		Debug(sprite, 4, "Increasing sprite cache to {} items ({} bytes)", items, items * sizeof(SpriteCache));
+		Debug(Facility::Sprite, Severity::Info, "Increasing sprite cache to {} items ({} bytes)", items, items * sizeof(SpriteCache));
 
 		_spritecache.resize(items);
 	}
@@ -185,7 +184,7 @@ uint GetSpriteCountForFile(const std::string &filename, SpriteID begin, SpriteID
 			SpriteCache *sc = GetSpriteCache(i);
 			if (sc->file == file) {
 				count++;
-				Debug(sprite, 4, "Sprite: {}", i);
+				Debug(Facility::Sprite, Severity::Info, "Sprite: {}", i);
 			}
 		}
 	}
@@ -380,9 +379,7 @@ static bool ResizeSprites(SpriteLoader::SpriteCollection &sprite, ZoomLevels spr
 	if (!PadSprites(sprite, sprite_avail, encoder)) return false;
 
 	/* Create other missing zoom levels */
-	for (ZoomLevel zoom = ZoomLevel::Begin; zoom != ZoomLevel::End; zoom++) {
-		if (zoom == ZoomLevel::Min) continue;
-
+	for (ZoomLevel zoom : EnumRange(ZoomLevel::In2x, ZoomLevel::End)) {
 		if (sprite_avail.Test(zoom)) {
 			/* Check that size and offsets match the fully zoomed image. */
 			[[maybe_unused]] const auto &root_sprite = sprite[ZoomLevel::Min];
@@ -465,7 +462,7 @@ static void *ReadSprite(const SpriteCache *sc, SpriteID id, SpriteType sprite_ty
 	assert(IsMapgenSpriteID(id) == (sprite_type == SpriteType::MapGen));
 	assert(sc->type == sprite_type);
 
-	Debug(sprite, 9, "Load sprite {}", id);
+	Debug(Facility::Sprite, Severity::Trace3, "Load sprite {}", id);
 
 	SpriteLoader::SpriteCollection sprite;
 	ZoomLevels sprite_avail;
@@ -710,9 +707,9 @@ static void DeleteEntriesFromSpriteCache(size_t to_remove)
 		SpriteID id;
 		size_t size;
 
-		bool operator<(const SpriteInfo &other) const
+		auto operator<=>(const SpriteInfo &other) const noexcept
 		{
-			return this->lru < other.lru;
+			return this->lru <=> other.lru;
 		}
 	};
 
@@ -755,7 +752,7 @@ static void DeleteEntriesFromSpriteCache(size_t to_remove)
 		GetSpriteCache(it.id)->ClearSpriteData();
 	}
 
-	Debug(sprite, 3, "DeleteEntriesFromSpriteCache, deleted: {}, freed: {}, in use: {} --> {}, requested: {}",
+	Debug(Facility::Sprite, Severity::Notice, "DeleteEntriesFromSpriteCache, deleted: {}, freed: {}, in use: {} --> {}, requested: {}",
 			candidates.size(), candidate_bytes, initial_in_use, _spritecache_bytes_used, to_remove);
 }
 
@@ -768,7 +765,7 @@ void IncreaseSpriteLRU()
 	}
 
 	if (_sprite_lru_counter >= 0xC0000000) {
-		Debug(sprite, 3, "Fixing lru {}, inuse={}", _sprite_lru_counter, _spritecache_bytes_used);
+		Debug(Facility::Sprite, Severity::Notice, "Fixing lru {}, inuse={}", _sprite_lru_counter, _spritecache_bytes_used);
 
 		for (SpriteCache &sc : _spritecache) {
 			if (sc.ptr != nullptr) {
@@ -822,9 +819,9 @@ static void *HandleInvalidSpriteRequest(SpriteID sprite, SpriteType requested, S
 		return GetRawSprite(sprite, sc->type, allocator, encoder);
 	}
 
-	uint8_t warning_level = sc->warned ? 6 : 0;
+	Severity warning_level = sc->warned ? Severity::Debug2 : Severity::Critical;
 	sc->warned = true;
-	Debug(sprite, warning_level, "Tried to load {} sprite #{} as a {} sprite. Probable cause: NewGRF interference", sprite_types[static_cast<uint8_t>(available)], sprite, sprite_types[static_cast<uint8_t>(requested)]);
+	Debug(Facility::Sprite, warning_level, "Tried to load {} sprite #{} as a {} sprite. Probable cause: NewGRF interference", sprite_types[static_cast<uint8_t>(available)], sprite, sprite_types[static_cast<uint8_t>(requested)]);
 
 	switch (requested) {
 		case SpriteType::Normal:
@@ -858,7 +855,7 @@ void *GetRawSprite(SpriteID sprite, SpriteType type, SpriteAllocator *allocator,
 	assert(type < SpriteType::Invalid);
 
 	if (!SpriteExists(sprite)) {
-		Debug(sprite, 1, "Tried to load non-existing sprite #{}. Probable cause: Wrong/missing NewGRFs", sprite);
+		Debug(Facility::Sprite, Severity::Error, "Tried to load non-existing sprite #{}. Probable cause: Wrong/missing NewGRFs", sprite);
 
 		/* SPR_IMG_QUERY is a BIG FAT RED ? */
 		sprite = SPR_IMG_QUERY;
@@ -868,7 +865,8 @@ void *GetRawSprite(SpriteID sprite, SpriteType type, SpriteAllocator *allocator,
 
 	if (sc->type != type) return HandleInvalidSpriteRequest(sprite, type, sc, allocator, encoder);
 
-	if (allocator == nullptr && encoder == nullptr) {
+	if (allocator == nullptr) {
+		assert(encoder == nullptr);
 		/* Load sprite into/from spritecache */
 
 		/* Update LRU */
@@ -889,6 +887,7 @@ void *GetRawSprite(SpriteID sprite, SpriteType type, SpriteAllocator *allocator,
 
 		return static_cast<void *>(sc->ptr.get());
 	} else {
+		assert(encoder != nullptr);
 		/* Do not use the spritecache, but a different allocator. */
 		return ReadSprite(sc, sprite, type, *allocator, encoder);
 	}

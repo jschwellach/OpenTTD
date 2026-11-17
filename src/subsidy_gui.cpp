@@ -12,10 +12,8 @@
 #include "town.h"
 #include "window_gui.h"
 #include "strings_func.h"
-#include "timer/timer_game_calendar.h"
 #include "viewport_func.h"
 #include "gui.h"
-#include "subsidy_func.h"
 #include "subsidy_base.h"
 #include "core/geometry_func.hpp"
 
@@ -88,8 +86,8 @@ struct SubsidyListWindow : Window {
 			default: NOT_REACHED();
 		}
 
-		if (_ctrl_pressed || !ScrollMainWindowToTile(xy)) {
-			if (_ctrl_pressed) ShowExtraViewportWindow(xy);
+		if (IsCtrlPressed() || !ScrollMainWindowToTile(xy)) {
+			if (IsCtrlPressed()) ShowExtraViewportWindow(xy);
 
 			/* otherwise determine dst coordinate for subsidy and scroll to it */
 			switch (s->dst.type) {
@@ -98,7 +96,7 @@ struct SubsidyListWindow : Window {
 				default: NOT_REACHED();
 			}
 
-			if (_ctrl_pressed) {
+			if (IsCtrlPressed()) {
 				ShowExtraViewportWindow(xy);
 			} else {
 				ScrollMainWindowToTile(xy);
@@ -282,7 +280,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_subsidies_list_widge
 /** Window definition for the subsidies window. */
 static WindowDesc _subsidies_list_desc(
 	WindowPosition::Automatic, "list_subsidies", 500, 127,
-	WC_SUBSIDIES_LIST, WC_NONE,
+	WindowClass::SubsidyList, WindowClass::None,
 	{},
 	_nested_subsidies_list_widgets
 );

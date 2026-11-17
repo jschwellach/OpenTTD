@@ -13,7 +13,6 @@
 #include "../../debug.h"
 #include "../../settings_type.h"
 #include "../../misc/dbg_helpers.h"
-#include "yapf_type.hpp"
 
 /**
  * CYapfBaseT - A-star type path finder base class.
@@ -120,9 +119,6 @@ public:
 	/** default constructor */
 	inline CYapfBaseT() : settings(&_settings_game.pf.yapf), max_search_nodes(PfGetSettings().max_search_nodes) {}
 
-	/** default destructor */
-	~CYapfBaseT() {}
-
 protected:
 	/**
 	 * Access the inherited path finder.
@@ -176,14 +172,14 @@ public:
 
 		const bool destination_found = (this->best_dest_node != nullptr);
 
-		if (_debug_yapf_level >= 3) {
+		if (IsVisibleSeverity(Facility::Yapf, Severity::Notice)) {
 			const UnitID veh_idx = (this->vehicle != nullptr) ? this->vehicle->unitnumber : 0;
 			const char ttc = Yapf().TransportTypeChar();
 			const float cache_hit_ratio = (this->stats_cache_hits == 0) ? 0.0f : ((float)this->stats_cache_hits / (float)(this->stats_cache_hits + this->stats_cost_calcs) * 100.0f);
 			const int cost = destination_found ? this->best_dest_node->cost : -1;
 			const int dist = destination_found ? this->best_dest_node->estimate - this->best_dest_node->cost : -1;
 
-			Debug(yapf, 3, "[YAPF{}]{}{:4d} - {} rounds - {} open - {} closed - CHR {:4.1f}% - C {} D {}",
+			Debug(Facility::Yapf, Severity::Notice, "[YAPF{}]{}{:4d} - {} rounds - {} open - {} closed - CHR {:4.1f}% - C {} D {}",
 				ttc, destination_found ? '-' : '!', veh_idx, this->num_steps, this->nodes.OpenCount(), this->nodes.ClosedCount(), cache_hit_ratio, cost, dist
 			);
 		}
@@ -235,9 +231,8 @@ public:
 	 */
 	inline void AddMultipleNodes(Node *parent, const TrackFollower &tf)
 	{
-		bool is_choice = (KillFirstBit(tf.new_td_bits) != TRACKDIR_BIT_NONE);
-		for (TrackdirBits rtds = tf.new_td_bits; rtds != TRACKDIR_BIT_NONE; rtds = KillFirstBit(rtds)) {
-			Trackdir td = (Trackdir)FindFirstBit(rtds);
+		bool is_choice = tf.new_td_bits.Count() > 1;
+		for (Trackdir td : tf.new_td_bits) {
 			Node &n = Yapf().CreateNewNode();
 			n.Set(parent, tf.new_tile, td, is_choice);
 			Yapf().AddNewNode(n, tf);

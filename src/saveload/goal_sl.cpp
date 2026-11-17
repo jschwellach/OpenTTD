@@ -17,16 +17,16 @@
 #include "../safeguards.h"
 
 static const SaveLoad _goals_desc[] = {
-	     SLE_VAR(Goal, company,   SLE_FILE_U16 | SLE_VAR_U8),
-	     SLE_VAR(Goal, type,      SLE_FILE_U16 | SLE_VAR_U8),
-	     SLE_VAR(Goal, dst,       SLE_UINT32),
-	    SLE_SSTR(Goal, text,      SLE_STR | SLF_ALLOW_CONTROL),
-	SLE_CONDSSTR(Goal, progress,  SLE_STR | SLF_ALLOW_CONTROL, SLV_182, SL_MAX_VERSION),
-	 SLE_CONDVAR(Goal, completed, SLE_BOOL, SLV_182, SL_MAX_VERSION),
+	SaveLoad::Variable<VarFileType::U16>("company", SLE_OBJECT_ADDRESS(Goal, company)),
+	SaveLoad::Variable<VarFileType::U16>("type", SLE_OBJECT_ADDRESS(Goal, type)),
+	SaveLoad::Variable<VarFileType::U32>("dst", SLE_OBJECT_ADDRESS(Goal, dst)),
+	SaveLoad::String("text", SLE_OBJECT_ADDRESS(Goal, text), StringValidationSetting::AllowControlCode),
+	SaveLoad::String("progress", SLE_OBJECT_ADDRESS(Goal, progress), StringValidationSetting::AllowControlCode, SaveLoadVersion::GoalProgressPlaneAcceleration),
+	SaveLoad::Variable<VarFileType::Bool>("completed", SLE_OBJECT_ADDRESS(Goal, completed), SaveLoadVersion::GoalProgressPlaneAcceleration),
 };
 
 struct GOALChunkHandler : ChunkHandler {
-	GOALChunkHandler() : ChunkHandler('GOAL', CH_TABLE) {}
+	GOALChunkHandler() : ChunkHandler("GOAL", ChunkType::Table) {}
 
 	void Save() const override
 	{

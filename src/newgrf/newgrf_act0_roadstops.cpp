@@ -71,7 +71,7 @@ static ChangeInfoResult RoadStopChangeInfo(uint first, uint last, int prop, Byte
 	ChangeInfoResult ret = ChangeInfoResult::Success;
 
 	if (last > NUM_ROADSTOPS_PER_GRF) {
-		GrfMsg(1, "RoadStopChangeInfo: RoadStop {} is invalid, max {}, ignoring", last, NUM_ROADSTOPS_PER_GRF);
+		GrfMsg(Severity::Error, "RoadStopChangeInfo: RoadStop {} is invalid, max {}, ignoring", last, NUM_ROADSTOPS_PER_GRF);
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -81,25 +81,23 @@ static ChangeInfoResult RoadStopChangeInfo(uint first, uint last, int prop, Byte
 		auto &rs = _cur_gps.grffile->roadstops[id];
 
 		if (rs == nullptr && prop != 0x08) {
-			GrfMsg(1, "RoadStopChangeInfo: Attempt to modify undefined road stop {}, ignoring", id);
+			GrfMsg(Severity::Error, "RoadStopChangeInfo: Attempt to modify undefined road stop {}, ignoring", id);
 			ChangeInfoResult cir = IgnoreRoadStopProperty(prop, buf);
 			if (cir > ret) ret = cir;
 			continue;
 		}
 
 		switch (prop) {
-			case 0x08: { // Road Stop Class ID
+			case 0x08: // Road Stop Class ID
 				if (rs == nullptr) {
 					rs = std::make_unique<RoadStopSpec>();
 				}
 
-				uint32_t classid = buf.ReadDWord();
-				rs->class_index = RoadStopClass::Allocate(std::byteswap(classid));
+				rs->class_index = RoadStopClass::Allocate(buf.ReadLabel<RoadStopClass::GlobalID>());
 				break;
-			}
 
 			case 0x09: // Road stop type
-				rs->stop_type = (RoadStopAvailabilityType)buf.ReadByte();
+				rs->stop_type = RoadStopAvailabilityType{buf.ReadByte()};
 				break;
 
 			case 0x0A: // Road Stop Name
@@ -111,7 +109,7 @@ static ChangeInfoResult RoadStopChangeInfo(uint first, uint last, int prop, Byte
 				break;
 
 			case 0x0C: // The draw modes
-				rs->draw_mode = static_cast<RoadStopDrawModes>(buf.ReadByte());
+				rs->draw_mode = RoadStopDrawModes{buf.ReadByte()};
 				break;
 
 			case 0x0D: // Cargo types for random triggers
@@ -120,7 +118,7 @@ static ChangeInfoResult RoadStopChangeInfo(uint first, uint last, int prop, Byte
 
 			case 0x0E: // Animation info
 				rs->animation.frames = buf.ReadByte();
-				rs->animation.status = static_cast<AnimationStatus>(buf.ReadByte());
+				rs->animation.status = AnimationStatus{buf.ReadByte()};
 				break;
 
 			case 0x0F: // Animation speed
@@ -128,15 +126,15 @@ static ChangeInfoResult RoadStopChangeInfo(uint first, uint last, int prop, Byte
 				break;
 
 			case 0x10: // Animation triggers
-				rs->animation.triggers = static_cast<StationAnimationTriggers>(buf.ReadWord());
+				rs->animation.triggers = StationAnimationTriggers{buf.ReadWord()};
 				break;
 
 			case 0x11: // Callback mask
-				rs->callback_mask = static_cast<RoadStopCallbackMasks>(buf.ReadByte());
+				rs->callback_mask = RoadStopCallbackMasks{buf.ReadByte()};
 				break;
 
 			case 0x12: // General flags
-				rs->flags = static_cast<RoadStopSpecFlags>(buf.ReadDWord()); // Future-proofing, size this as 4 bytes, but we only need two byte's worth of flags at present
+				rs->flags = static_cast<RoadStopSpecFlags>(buf.ReadDWord()); // Future-proofing, size this as 4 bytes, but we only need one byte's worth of flags at present
 				break;
 
 			case 0x13: { // Minimum bridge height for each of the roadstop's tile layouts.

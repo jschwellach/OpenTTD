@@ -33,7 +33,7 @@ static ChangeInfoResult RoadTypeChangeInfo(uint first, uint last, int prop, Byte
 	const auto &type_map = (rtt == RoadTramType::Tram) ? _cur_gps.grffile->tramtype_map : _cur_gps.grffile->roadtype_map;
 
 	if (last > std::size(type_map)) {
-		GrfMsg(1, "RoadTypeChangeInfo: Road type {} is invalid, max {}, ignoring", last, std::size(type_map));
+		GrfMsg(Severity::Error, "RoadTypeChangeInfo: Road type {} is invalid, max {}, ignoring", last, std::size(type_map));
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -77,15 +77,14 @@ static ChangeInfoResult RoadTypeChangeInfo(uint first, uint last, int prop, Byte
 				 * default road types. */
 				int n = buf.ReadByte();
 				for (int j = 0; j != n; j++) {
-					RoadTypeLabel label = buf.ReadDWord();
-					RoadType resolved_rt = GetRoadTypeByLabel(std::byteswap(label), false);
+					RoadType resolved_rt = GetRoadTypeByLabel(buf.ReadLabel<RoadTypeLabel>(), false);
 					if (resolved_rt != INVALID_ROADTYPE) {
 						switch (prop) {
 							case 0x0F:
 								if (GetRoadTramType(resolved_rt) == rtt) {
 									rti->powered_roadtypes.Set(resolved_rt);
 								} else {
-									GrfMsg(1, "RoadTypeChangeInfo: Powered road type list: Road type {} road/tram type does not match road type {}, ignoring", resolved_rt, rt);
+									GrfMsg(Severity::Error, "RoadTypeChangeInfo: Powered road type list: Road type {} road/tram type does not match road type {}, ignoring", resolved_rt, rt);
 								}
 								break;
 							case 0x18: rti->introduction_required_roadtypes.Set(resolved_rt); break;
@@ -97,7 +96,7 @@ static ChangeInfoResult RoadTypeChangeInfo(uint first, uint last, int prop, Byte
 			}
 
 			case 0x10: // Road Type flags
-				rti->flags = static_cast<RoadTypeFlags>(buf.ReadByte());
+				rti->flags = RoadTypeFlags{buf.ReadByte()};
 				break;
 
 			case 0x13: // Construction cost factor
@@ -154,22 +153,20 @@ static ChangeInfoResult RoadTypeReserveInfo(uint first, uint last, int prop, Byt
 	auto &type_map = (rtt == RoadTramType::Tram) ? _cur_gps.grffile->tramtype_map : _cur_gps.grffile->roadtype_map;
 
 	if (last > std::size(type_map)) {
-		GrfMsg(1, "RoadTypeReserveInfo: Road type {} is invalid, max {}, ignoring", last, std::size(type_map));
+		GrfMsg(Severity::Error, "RoadTypeReserveInfo: Road type {} is invalid, max {}, ignoring", last, std::size(type_map));
 		return ChangeInfoResult::InvalidId;
 	}
 
 	for (uint id = first; id < last; ++id) {
 		switch (prop) {
 			case 0x08: { // Label of road type
-				RoadTypeLabel rtl = buf.ReadDWord();
-				rtl = std::byteswap(rtl);
-
+				RoadTypeLabel rtl = buf.ReadLabel<RoadTypeLabel>();
 				RoadType rt = GetRoadTypeByLabel(rtl, false);
 				if (rt == INVALID_ROADTYPE) {
 					/* Set up new road type */
 					rt = AllocateRoadType(rtl, rtt);
 				} else if (GetRoadTramType(rt) != rtt) {
-					GrfMsg(1, "RoadTypeReserveInfo: Road type {} is invalid type (road/tram), ignoring", id);
+					GrfMsg(Severity::Error, "RoadTypeReserveInfo: Road type {} is invalid type (road/tram), ignoring", id);
 					return ChangeInfoResult::InvalidId;
 				}
 
@@ -192,11 +189,11 @@ static ChangeInfoResult RoadTypeReserveInfo(uint first, uint last, int prop, Byt
 				if (type_map[id] != INVALID_ROADTYPE) {
 					int n = buf.ReadByte();
 					for (int j = 0; j != n; j++) {
-						_roadtypes[type_map[id]].alternate_labels.insert(std::byteswap(buf.ReadDWord()));
+						_roadtypes[type_map[id]].alternate_labels.insert(buf.ReadLabel<RoadTypeLabel>());
 					}
 					break;
 				}
-				GrfMsg(1, "RoadTypeReserveInfo: Ignoring property 1D for road type {} because no label was set", id);
+				GrfMsg(Severity::Error, "RoadTypeReserveInfo: Ignoring property 1D for road type {} because no label was set", id);
 				/* FALL THROUGH */
 
 			case 0x0F: // Powered roadtype list

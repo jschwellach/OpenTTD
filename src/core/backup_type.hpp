@@ -48,7 +48,7 @@ struct Backup {
 		if (this->valid) {
 			/* We cannot assert here, as missing restoration is 'normal' when exceptions are thrown.
 			 * Exceptions are especially used to abort world generation. */
-			Debug(misc, 0, "{}:{}: Backed-up value was not restored!", this->location.file_name(), this->location.line());
+			Debug(Facility::Misc, Severity::Critical, "{}:{}: Backed-up value was not restored!", this->location.file_name(), this->location.line());
 			this->Restore();
 		}
 	}
@@ -161,6 +161,14 @@ struct AutoRestoreBackup {
 	AutoRestoreBackup(T &original, T new_value) : original(original), original_value(original)
 	{
 		original = new_value;
+	}
+
+	/**
+	 * Backup variable without switching value.
+	 * @param original Variable to backup.
+	 */
+	AutoRestoreBackup(T &original) : original(original), original_value(original)
+	{
 	}
 
 	/**

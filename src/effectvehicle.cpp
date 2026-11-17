@@ -11,7 +11,6 @@
 #include "landscape.h"
 #include "core/random_func.hpp"
 #include "industry_map.h"
-#include "vehicle_func.h"
 #include "sound_func.h"
 #include "animated_tile_func.h"
 #include "effectvehicle_func.h"
@@ -569,18 +568,18 @@ struct EffectProcs {
 
 /** Per-EffectVehicleType handling. */
 static const std::array<EffectProcs, EV_END> _effect_procs = {{
-	{ ChimneySmokeInit,   ChimneySmokeTick,   TO_INDUSTRIES }, // EV_CHIMNEY_SMOKE
-	{ SteamSmokeInit,     SteamSmokeTick,     TO_INVALID    }, // EV_STEAM_SMOKE
-	{ DieselSmokeInit,    DieselSmokeTick,    TO_INVALID    }, // EV_DIESEL_SMOKE
-	{ ElectricSparkInit,  ElectricSparkTick,  TO_INVALID    }, // EV_ELECTRIC_SPARK
-	{ SmokeInit,          SmokeTick,          TO_INVALID    }, // EV_CRASH_SMOKE
-	{ ExplosionLargeInit, ExplosionLargeTick, TO_INVALID    }, // EV_EXPLOSION_LARGE
-	{ BreakdownSmokeInit, BreakdownSmokeTick, TO_INVALID    }, // EV_BREAKDOWN_SMOKE
-	{ ExplosionSmallInit, ExplosionSmallTick, TO_INVALID    }, // EV_EXPLOSION_SMALL
-	{ BulldozerInit,      BulldozerTick,      TO_INVALID    }, // EV_BULLDOZER
-	{ BubbleInit,         BubbleTick,         TO_INDUSTRIES }, // EV_BUBBLE
-	{ SmokeInit,          SmokeTick,          TO_INVALID    }, // EV_BREAKDOWN_SMOKE_AIRCRAFT
-	{ SmokeInit,          SmokeTick,          TO_INDUSTRIES }, // EV_COPPER_MINE_SMOKE
+	{ ChimneySmokeInit,   ChimneySmokeTick,   TransparencyOption::Industries }, // EV_CHIMNEY_SMOKE
+	{ SteamSmokeInit,     SteamSmokeTick,     TransparencyOption::Invalid    }, // EV_STEAM_SMOKE
+	{ DieselSmokeInit,    DieselSmokeTick,    TransparencyOption::Invalid    }, // EV_DIESEL_SMOKE
+	{ ElectricSparkInit,  ElectricSparkTick,  TransparencyOption::Invalid    }, // EV_ELECTRIC_SPARK
+	{ SmokeInit,          SmokeTick,          TransparencyOption::Invalid    }, // EV_CRASH_SMOKE
+	{ ExplosionLargeInit, ExplosionLargeTick, TransparencyOption::Invalid    }, // EV_EXPLOSION_LARGE
+	{ BreakdownSmokeInit, BreakdownSmokeTick, TransparencyOption::Invalid    }, // EV_BREAKDOWN_SMOKE
+	{ ExplosionSmallInit, ExplosionSmallTick, TransparencyOption::Invalid    }, // EV_EXPLOSION_SMALL
+	{ BulldozerInit,      BulldozerTick,      TransparencyOption::Invalid    }, // EV_BULLDOZER
+	{ BubbleInit,         BubbleTick,         TransparencyOption::Industries }, // EV_BUBBLE
+	{ SmokeInit,          SmokeTick,          TransparencyOption::Invalid    }, // EV_BREAKDOWN_SMOKE_AIRCRAFT
+	{ SmokeInit,          SmokeTick,          TransparencyOption::Industries }, // EV_COPPER_MINE_SMOKE
 }};
 
 /**
@@ -652,7 +651,7 @@ void EffectVehicle::UpdateDeltaXY()
 
 /**
  * Determines the transparency option affecting the effect.
- * @return Transparency option, or TO_INVALID if none.
+ * @return Transparency option, or TransparencyOption::Invalid if none.
  */
 TransparencyOption EffectVehicle::GetTransparencyOption() const
 {

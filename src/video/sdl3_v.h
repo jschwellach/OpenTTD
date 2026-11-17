@@ -5,19 +5,22 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file sdl2_v.h Base of the SDL2 video driver. */
+/** @file sdl3_v.h Base of the SDL3 video driver. */
 
 #ifndef VIDEO_SDL_H
 #define VIDEO_SDL_H
-
-#include <condition_variable>
 
 #include "video_driver.hpp"
 
 /** The SDL video driver. */
 class VideoDriver_SDL_Base : public VideoDriver {
 public:
-	VideoDriver_SDL_Base(bool uses_hardware_acceleration = false) : VideoDriver(uses_hardware_acceleration) {}
+	/**
+	 * Create the video driver.
+	 * @param uses_hardware_acceleration Whether hardware acceleration is used by this instance of the driver.
+	 * @param supports_animation_buffer Whether this driver supports a hardware accelerated animation buffer.
+	 */
+	VideoDriver_SDL_Base(bool uses_hardware_acceleration = false, bool supports_animation_buffer = false) : VideoDriver(uses_hardware_acceleration, supports_animation_buffer) {}
 
 	std::optional<std::string_view> Start(const StringList &param) override;
 
@@ -90,7 +93,6 @@ protected:
 
 private:
 	void LoopOnce();
-	void MainLoopCleanup();
 	bool CreateMainSurface(uint w, uint h, bool resize);
 	std::optional<std::string_view> Initialize();
 
@@ -104,7 +106,7 @@ private:
 	 */
 	bool edit_box_focused = false;
 
-	int startup_display = 0;
+	int startup_display = 0; ///< The display to show OpenTTD on when starting.
 };
 
 #endif /* VIDEO_SDL_H */

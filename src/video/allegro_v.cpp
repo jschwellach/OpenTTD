@@ -57,7 +57,7 @@ void VideoDriver_Allegro::MakeDirty(int left, int top, int width, int height)
 
 void VideoDriver_Allegro::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
 	size_t n = _num_dirty_rects;
 	if (n == 0) return;
@@ -190,7 +190,7 @@ static bool CreateMainSurface(uint w, uint h)
 
 	GetAvailableVideoMode(&w, &h);
 	if (set_gfx_mode(_fullscreen ? GFX_AUTODETECT_FULLSCREEN : GFX_AUTODETECT_WINDOWED, w, h, 0, 0) != 0) {
-		Debug(driver, 0, "Allegro: Couldn't allocate a window to draw on '{}'", allegro_error);
+		Debug(Facility::Driver, Severity::Critical, "Allegro: Couldn't allocate a window to draw on '{}'", allegro_error);
 		return false;
 	}
 
@@ -323,16 +323,17 @@ static uint32_t ConvertAllegroKeyIntoMy(char32_t *character)
 	if (key_shifts & KB_CTRL_FLAG)  key |= WKC_CTRL;
 	if (key_shifts & KB_ALT_FLAG)   key |= WKC_ALT;
 #if 0
-	Debug(driver, 0, "Scancode character pressed {}", scancode);
-	Debug(driver, 0, "Unicode character pressed {}", unicode);
+	Debug(Facility::Driver, Severity::Critical, "Scancode character pressed {}", scancode);
+	Debug(Facility::Driver, Severity::Critical, "Unicode character pressed {}", unicode);
 #endif
 
 	*character = unicode;
 	return key;
 }
 
-static const uint LEFT_BUTTON  = 0;
+static const uint LEFT_BUTTON = 0;
 static const uint RIGHT_BUTTON = 1;
+static const uint MIDDLE_BUTTON = 2;
 
 bool VideoDriver_Allegro::PollEvent()
 {
@@ -355,12 +356,17 @@ bool VideoDriver_Allegro::PollEvent()
 				}
 				switch (button) {
 					case LEFT_BUTTON:
-						_left_button_down = true;
+						_input_pressed.Set(ControlInput::Left);
 						break;
 
 					case RIGHT_BUTTON:
-						_right_button_down = true;
-						_right_button_clicked = true;
+						_input_pressed.Set(ControlInput::Right);
+						_input_clicked.Set(ControlInput::Right);
+						break;
+
+					case MIDDLE_BUTTON:
+						_input_pressed.Set(ControlInput::Middle);
+						_input_clicked.Set(ControlInput::Middle);
 						break;
 
 					default:
@@ -370,14 +376,15 @@ bool VideoDriver_Allegro::PollEvent()
 			} else {
 				/* Released mouse button */
 				if (_rightclick_emulate) {
-					_right_button_down = false;
-					_left_button_down = false;
-					_left_button_clicked = false;
+					_input_pressed.Reset({ControlInput::Left, ControlInput::Right});
+					_input_clicked.Reset(ControlInput::Left);
 				} else if (button == LEFT_BUTTON) {
-					_left_button_down = false;
-					_left_button_clicked = false;
+					_input_pressed.Reset(ControlInput::Left);
+					_input_clicked.Reset(ControlInput::Left);
 				} else if (button == RIGHT_BUTTON) {
-					_right_button_down = false;
+					_input_pressed.Reset(ControlInput::Right);
+				} else if (button == MIDDLE_BUTTON) {
+					_input_pressed.Reset(ControlInput::Middle);
 				}
 			}
 		}
@@ -421,7 +428,7 @@ int _allegro_instance_count = 0;
 std::optional<std::string_view> VideoDriver_Allegro::Start(const StringList &param)
 {
 	if (_allegro_instance_count == 0 && install_allegro(SYSTEM_AUTODETECT, &errno, nullptr)) {
-		Debug(driver, 0, "allegro: install_allegro failed '{}'", allegro_error);
+		Debug(Facility::Driver, Severity::Critical, "allegro: install_allegro failed '{}'", allegro_error);
 		return "Failed to set up Allegro";
 	}
 	_allegro_instance_count++;
@@ -458,10 +465,10 @@ void VideoDriver_Allegro::Stop()
 
 void VideoDriver_Allegro::InputLoop()
 {
-	bool old_ctrl_pressed = _ctrl_pressed;
+	bool old_ctrl_pressed = IsCtrlPressed();
 
-	_ctrl_pressed  = !!(key_shifts & KB_CTRL_FLAG);
-	_shift_pressed = !!(key_shifts & KB_SHIFT_FLAG);
+	_input_pressed.Set(ControlInput::Ctrl, (key_shifts & KB_CTRL_FLAG) != 0);
+	_input_pressed.Set(ControlInput::Shift, (key_shifts & KB_SHIFT_FLAG) != 0);
 
 	/* Speedup when pressing tab, except when using ALT+TAB
 	 * to switch to another application. */
@@ -473,7 +480,7 @@ void VideoDriver_Allegro::InputLoop()
 	_dirkeys.Set(DirectionKey::Right, key[KEY_RIGHT]);
 	_dirkeys.Set(DirectionKey::Down, key[KEY_DOWN]);
 
-	if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();
+	if (old_ctrl_pressed != IsCtrlPressed()) HandleCtrlChanged();
 }
 
 void VideoDriver_Allegro::MainLoop()

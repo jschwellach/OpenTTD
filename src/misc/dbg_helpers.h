@@ -32,7 +32,7 @@ inline std::string_view ItemAt(E idx, std::span<const std::string_view> names, s
 	if (static_cast<size_t>(idx) >= std::size(names)) {
 		return unknown_name;
 	}
-	return names[idx];
+	return names[to_underlying(idx)];
 }
 
 /**
@@ -58,34 +58,21 @@ inline std::string_view ItemAt(E idx, std::span<const std::string_view> names, s
 /**
  * Helper template function that returns compound bitfield name that is
  * concatenation of names of each set bit in the given value
- * or invalid_name when index == invalid_index
  * or unknown_name when index is out of bounds.
  * @param value The bitmask of values.
  * @param names Span of names to index.
  * @param unknown_name The default value when the index does not exist.
- * @param invalid_index The invalid value to consider.
- * @param invalid_name The value to output when the invalid value is given.
  * @return The composed name.
  */
-template <typename E>
-inline std::string ComposeName(E value, std::span<const std::string_view> names, std::string_view unknown_name, E invalid_index, std::string_view invalid_name)
+template <typename Tbitset>
+inline std::string ComposeName(Tbitset value, std::span<const std::string_view> names, std::string_view unknown_name)
 {
+	if (value.None()) return "<none>";
+
 	std::string out;
-	if (value == invalid_index) {
-		out = invalid_name;
-	} else if (value == 0) {
-		out = "<none>";
-	} else {
-		for (size_t i = 0; i < std::size(names); i++) {
-			if ((value & (1 << i)) == 0) continue;
-			out += (!out.empty() ? "+" : "");
-			out += names[i];
-			value &= ~(E)(1 << i);
-		}
-		if (value != 0) {
-			out += (!out.empty() ? "+" : "");
-			out += unknown_name;
-		}
+	for (auto index : value) {
+		if (!out.empty()) out += "+";
+		out += to_underlying(index) < std::size(names) ? names[to_underlying(index)] : unknown_name;
 	}
 	return out;
 }
@@ -93,31 +80,20 @@ inline std::string ComposeName(E value, std::span<const std::string_view> names,
 /**
  * Helper template function that returns compound bitfield name that is
  * concatenation of names of each set bit in the given value
+ * or invalid_name when value == invalid_index
  * or unknown_name when index is out of bounds.
  * @param value The bitmask of values.
  * @param names Span of names to index.
  * @param unknown_name The default value when the index does not exist.
+ * @param invalid_value The invalid value to consider.
+ * @param invalid_name The value to output when the invalid value is given.
  * @return The composed name.
  */
-template <typename E>
-inline std::string ComposeName(E value, std::span<const std::string_view> names, std::string_view unknown_name)
+template <typename Tbitset>
+inline std::string ComposeName(Tbitset value, std::span<const std::string_view> names, std::string_view unknown_name, Tbitset invalid_value, std::string_view invalid_name)
 {
-	std::string out;
-	if (value.base() == 0) {
-		out = "<none>";
-	} else {
-		for (size_t i = 0; i < std::size(names); ++i) {
-			if (!value.Test(static_cast<E::EnumType>(i))) continue;
-			out += (!out.empty() ? "+" : "");
-			out += names[i];
-			value.Reset(static_cast<E::EnumType>(i));
-		}
-		if (value.base() != 0) {
-			out += (!out.empty() ? "+" : "");
-			out += unknown_name;
-		}
-	}
-	return out;
+	if (value == invalid_value) return std::string{invalid_name};
+	return ComposeName(value, names, unknown_name);
 }
 
 std::string ValueStr(Trackdir td);
@@ -139,13 +115,11 @@ struct DumpTarget {
 		 */
 		KnownStructKey(size_t type_id, const void *ptr) : type_id(type_id), ptr(ptr) {}
 
-		bool operator<(const KnownStructKey &other) const
-		{
-			if (reinterpret_cast<size_t>(this->ptr) < reinterpret_cast<size_t>(other.ptr)) return true;
-			if (reinterpret_cast<size_t>(this->ptr) > reinterpret_cast<size_t>(other.ptr)) return false;
-			if (this->type_id < other.type_id) return true;
-			return false;
-		}
+		/**
+		 * Compare with another instance of this class.
+		 * @return The std::strong_ordering of the comparison.
+		 */
+		constexpr auto operator<=>(const KnownStructKey &) const noexcept = default;
 	};
 
 	/** Mapping of the KnownStructKey to the name for that structure. */

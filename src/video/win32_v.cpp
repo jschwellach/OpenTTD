@@ -27,6 +27,7 @@
 #include "win32_v.h"
 #include <windows.h>
 #include <imm.h>
+#include <objbase.h>
 #include <versionhelpers.h>
 #if defined(_MSC_VER) && defined(NTDDI_WIN10_RS4)
 #include <winrt/Windows.UI.ViewManagement.h>
@@ -57,8 +58,6 @@
 bool _window_maximize;
 static Dimension _bck_resolution;
 DWORD _imm_props;
-
-static Palette _local_palette; ///< Current palette to use for drawing.
 
 void VideoDriver_Win32Base::ClaimMousePointer()
 {
@@ -261,7 +260,7 @@ static LRESULT HandleCharMsg(uint keycode, char32_t charcode)
 
 	/* Did we get a lead surrogate? If yes, store and exit. */
 	if (Utf16IsLeadSurrogate(charcode)) {
-		if (prev_char != 0) Debug(driver, 1, "Got two UTF-16 lead surrogates, dropping the first one");
+		if (prev_char != 0) Debug(Facility::Driver, Severity::Error, "Got two UTF-16 lead surrogates, dropping the first one");
 		prev_char = charcode;
 		return 0;
 	}
@@ -271,7 +270,7 @@ static LRESULT HandleCharMsg(uint keycode, char32_t charcode)
 		if (Utf16IsTrailSurrogate(charcode)) {
 			charcode = Utf16DecodeSurrogate(prev_char, charcode);
 		} else {
-			Debug(driver, 1, "Got an UTF-16 lead surrogate without a trail surrogate, dropping the lead surrogate");
+			Debug(Facility::Driver, Severity::Error, "Got an UTF-16 lead surrogate without a trail surrogate, dropping the lead surrogate");
 		}
 	}
 	prev_char = 0;
@@ -331,7 +330,7 @@ static void SetCandidatePos(HWND hwnd)
 			Point pt = _focused_window->GetCaretPosition();
 			cf.ptCurrentPos.x = _focused_window->left + pt.x;
 			cf.ptCurrentPos.y = _focused_window->top  + pt.y;
-			if (_focused_window->window_class == WC_CONSOLE) {
+			if (_focused_window->window_class == WindowClass::Console) {
 				cf.rcArea.left   = _focused_window->left;
 				cf.rcArea.top    = _focused_window->top;
 				cf.rcArea.right  = _focused_window->left + _focused_window->width;
@@ -572,35 +571,74 @@ LRESULT CALLBACK WndProcGdi(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		case WM_LBUTTONDOWN:
 			SetCapture(hwnd);
-			_left_button_down = true;
+			_input_pressed.Set(ControlInput::Left);
 			HandleMouseEvents();
 			return 0;
 
 		case WM_LBUTTONUP:
 			ReleaseCapture();
-			_left_button_down = false;
-			_left_button_clicked = false;
+			_input_pressed.Reset(ControlInput::Left);
+			_input_clicked.Reset(ControlInput::Left);
 			HandleMouseEvents();
 			return 0;
 
 		case WM_RBUTTONDOWN:
 			SetCapture(hwnd);
-			_right_button_down = true;
-			_right_button_clicked = true;
+			_input_pressed.Set(ControlInput::Right);
+			_input_clicked.Set(ControlInput::Right);
 			HandleMouseEvents();
 			return 0;
 
 		case WM_RBUTTONUP:
 			ReleaseCapture();
-			_right_button_down = false;
+			_input_pressed.Reset(ControlInput::Right);
 			HandleMouseEvents();
 			return 0;
+
+		case WM_MBUTTONDOWN:
+			SetCapture(hwnd);
+			_input_pressed.Set(ControlInput::Middle);
+			_input_clicked.Set(ControlInput::Middle);
+			HandleMouseEvents();
+			return 0;
+
+		case WM_MBUTTONUP:
+			ReleaseCapture();
+			_input_pressed.Reset(ControlInput::Middle);
+			HandleMouseEvents();
+			return 0;
+
+		case WM_XBUTTONDOWN:
+			SetCapture(hwnd);
+			if ((wParam & MK_XBUTTON1) != 0) {
+				_input_pressed.Set(ControlInput::X1);
+				_input_clicked.Set(ControlInput::X1);
+				HandleMouseEvents();
+			}
+			if ((wParam & MK_XBUTTON2) != 0) {
+				_input_pressed.Set(ControlInput::X2);
+				_input_clicked.Set(ControlInput::X2);
+				HandleMouseEvents();
+			}
+			return TRUE;
+
+		case WM_XBUTTONUP:
+			ReleaseCapture();
+			if ((wParam & MK_XBUTTON1) == 0) {
+				_input_pressed.Reset(ControlInput::X1);
+				HandleMouseEvents();
+			}
+			if ((wParam & MK_XBUTTON2) == 0) {
+				_input_pressed.Reset(ControlInput::X2);
+				HandleMouseEvents();
+			}
+			return TRUE;
 
 		case WM_MOUSELEAVE:
 			UndrawMouseCursor();
 			_cursor.in_window = false;
 
-			if (!_left_button_down && !_right_button_down) MyShowCursor(true);
+			if (!_input_pressed.Any({ControlInput::Left, ControlInput::Right})) MyShowCursor(true);
 			return 0;
 
 		case WM_MOUSEMOVE: {
@@ -889,11 +927,19 @@ LRESULT CALLBACK WndProcGdi(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					Dimension d = _bck_resolution; // Save current non-fullscreen window size as it will be overwritten by ShowWindow.
 					ShowWindow(hwnd, SW_RESTORE);
 					_bck_resolution = d;
-					video_driver->MakeWindow(true);
+					if (video_driver->MinimiseRestoreWithToggleFullscreen()) {
+						video_driver->ToggleFullscreen(true);
+					} else {
+						video_driver->MakeWindow(true);
+					}
 				} else if (!active && !minimized) {
 					/* Minimise the window and restore desktop */
+					if (video_driver->MinimiseRestoreWithToggleFullscreen()) {
+						video_driver->ToggleFullscreen(false);
+						video_driver->fullscreen = true;
+					}
 					ShowWindow(hwnd, SW_MINIMIZE);
-					ChangeDisplaySettings(nullptr, 0);
+					if (!video_driver->MinimiseRestoreWithToggleFullscreen()) ChangeDisplaySettings(nullptr, 0);
 				}
 			}
 			break;
@@ -960,8 +1006,11 @@ static void FindResolutions(uint8_t bpp)
 	SortResolutions();
 }
 
-void VideoDriver_Win32Base::Initialize()
+std::optional<std::string_view> VideoDriver_Win32Base::Initialize()
 {
+	/* Initialize COM */
+	if (FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED))) return "COM initialization failed";
+
 	this->UpdateAutoResolution();
 
 	RegisterWndClass();
@@ -971,14 +1020,15 @@ void VideoDriver_Win32Base::Initialize()
 	this->width  = this->width_org  = _cur_resolution.width;
 	this->height = this->height_org = _cur_resolution.height;
 
-	Debug(driver, 2, "Resolution for display: {}x{}", _cur_resolution.width, _cur_resolution.height);
+	Debug(Facility::Driver, Severity::Warning, "Resolution for display: {}x{}", _cur_resolution.width, _cur_resolution.height);
+	return std::nullopt;
 }
 
 void VideoDriver_Win32Base::Stop()
 {
 	DestroyWindow(this->main_wnd);
 
-	if (this->fullscreen) ChangeDisplaySettings(nullptr, 0);
+	if (this->fullscreen && MinimiseRestoreWithToggleFullscreen()) ChangeDisplaySettings(nullptr, 0);
 	MyShowCursor(true);
 }
 void VideoDriver_Win32Base::MakeDirty(int left, int top, int width, int height)
@@ -989,16 +1039,16 @@ void VideoDriver_Win32Base::MakeDirty(int left, int top, int width, int height)
 
 void VideoDriver_Win32Base::CheckPaletteAnim()
 {
-	if (!CopyPalette(_local_palette)) return;
+	if (!CopyPalette(this->local_palette)) return;
 	this->MakeDirty(0, 0, _screen.width, _screen.height);
 }
 
 void VideoDriver_Win32Base::InputLoop()
 {
-	bool old_ctrl_pressed = _ctrl_pressed;
+	bool old_ctrl_pressed = IsCtrlPressed();
 
-	_ctrl_pressed = this->has_focus && GetAsyncKeyState(VK_CONTROL) < 0;
-	_shift_pressed = this->has_focus && GetAsyncKeyState(VK_SHIFT) < 0;
+	_input_pressed.Set(ControlInput::Ctrl, this->has_focus && GetAsyncKeyState(VK_CONTROL) < 0);
+	_input_pressed.Set(ControlInput::Shift, this->has_focus && GetAsyncKeyState(VK_SHIFT) < 0);
 
 	/* Speedup when pressing tab, except when using ALT+TAB
 	 * to switch to another application. */
@@ -1014,7 +1064,7 @@ void VideoDriver_Win32Base::InputLoop()
 		_dirkeys.Reset();
 	}
 
-	if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();
+	if (old_ctrl_pressed != IsCtrlPressed()) HandleCtrlChanged();
 }
 
 bool VideoDriver_Win32Base::PollEvent()
@@ -1054,7 +1104,7 @@ void VideoDriver_Win32Base::ClientSizeChanged(int w, int h, bool force)
 {
 	/* Allocate backing store of the new size. */
 	if (this->AllocateBackingStore(w, h, force)) {
-		CopyPalette(_local_palette, true);
+		CopyPalette(this->local_palette, true);
 
 		BlitterFactory::GetCurrentBlitter()->PostResize();
 
@@ -1076,7 +1126,7 @@ bool VideoDriver_Win32Base::ToggleFullscreen(bool full_screen)
 {
 	bool res = this->MakeWindow(full_screen);
 
-	InvalidateWindowClassesData(WC_GAME_OPTIONS, 3);
+	InvalidateWindowClassesData(WindowClass::GameOptions, 3);
 	return res;
 }
 
@@ -1146,7 +1196,8 @@ std::optional<std::string_view> VideoDriver_Win32GDI::Start(const StringList &pa
 {
 	if (BlitterFactory::GetCurrentBlitter()->GetScreenDepth() == 0) return "Only real blitters supported";
 
-	this->Initialize();
+	auto err = this->Initialize();
+	if (err) return err;
 
 	this->MakePalette();
 	this->AllocateBackingStore(_cur_resolution.width, _cur_resolution.height);
@@ -1213,7 +1264,7 @@ bool VideoDriver_Win32GDI::AfterBlitterChange()
 
 void VideoDriver_Win32GDI::MakePalette()
 {
-	CopyPalette(_local_palette, true);
+	CopyPalette(this->local_palette, true);
 
 	LOGPALETTE *pal = (LOGPALETTE *)new char[sizeof(LOGPALETTE) + (256 - 1) * sizeof(PALETTEENTRY)]();
 
@@ -1221,9 +1272,9 @@ void VideoDriver_Win32GDI::MakePalette()
 	pal->palNumEntries = 256;
 
 	for (uint i = 0; i != 256; i++) {
-		pal->palPalEntry[i].peRed   = _local_palette.palette[i].r;
-		pal->palPalEntry[i].peGreen = _local_palette.palette[i].g;
-		pal->palPalEntry[i].peBlue  = _local_palette.palette[i].b;
+		pal->palPalEntry[i].peRed = this->local_palette.palette[i].r;
+		pal->palPalEntry[i].peGreen = this->local_palette.palette[i].g;
+		pal->palPalEntry[i].peBlue = this->local_palette.palette[i].b;
 		pal->palPalEntry[i].peFlags = 0;
 
 	}
@@ -1237,9 +1288,9 @@ void VideoDriver_Win32GDI::UpdatePalette(HDC dc, uint start, uint count)
 	RGBQUAD rgb[256];
 
 	for (uint i = 0; i != count; i++) {
-		rgb[i].rgbRed   = _local_palette.palette[start + i].r;
-		rgb[i].rgbGreen = _local_palette.palette[start + i].g;
-		rgb[i].rgbBlue  = _local_palette.palette[start + i].b;
+		rgb[i].rgbRed = this->local_palette.palette[start + i].r;
+		rgb[i].rgbGreen = this->local_palette.palette[start + i].g;
+		rgb[i].rgbBlue = this->local_palette.palette[start + i].b;
 		rgb[i].rgbReserved = 0;
 	}
 
@@ -1259,7 +1310,7 @@ void VideoDriver_Win32GDI::PaletteChanged(HWND hWnd)
 
 void VideoDriver_Win32GDI::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
 	if (IsEmptyRect(this->dirty_rect)) return;
 
@@ -1269,16 +1320,16 @@ void VideoDriver_Win32GDI::Paint()
 	HBITMAP old_bmp = (HBITMAP)SelectObject(dc2, this->dib_sect);
 	HPALETTE old_palette = SelectPalette(dc, this->gdi_palette, FALSE);
 
-	if (_local_palette.count_dirty != 0) {
+	if (this->local_palette.count_dirty != 0) {
 		Blitter *blitter = BlitterFactory::GetCurrentBlitter();
 
 		switch (blitter->UsePaletteAnimation()) {
 			case Blitter::PaletteAnimation::VideoBackend:
-				this->UpdatePalette(dc2, _local_palette.first_dirty, _local_palette.count_dirty);
+				this->UpdatePalette(dc2, this->local_palette.first_dirty, this->local_palette.count_dirty);
 				break;
 
 			case Blitter::PaletteAnimation::Blitter: {
-				blitter->PaletteAnimate(_local_palette);
+				blitter->PaletteAnimate(this->local_palette);
 				break;
 			}
 
@@ -1288,7 +1339,7 @@ void VideoDriver_Win32GDI::Paint()
 			default:
 				NOT_REACHED();
 		}
-		_local_palette.count_dirty = 0;
+		this->local_palette.count_dirty = 0;
 	}
 
 	BitBlt(dc, 0, 0, this->width, this->height, dc2, 0, 0, SRCCOPY);
@@ -1439,11 +1490,16 @@ std::optional<std::string_view> VideoDriver_Win32OpenGL::Start(const StringList 
 
 	LoadWGLExtensions();
 
-	this->Initialize();
+	auto err = this->Initialize();
+	if (err) {
+		this->Stop();
+		_cur_resolution = old_res;
+		return err;
+	}
 	this->MakeWindow(_fullscreen);
 
 	/* Create and initialize OpenGL context. */
-	auto err = this->AllocateContext();
+	err = this->AllocateContext();
 	if (err) {
 		this->Stop();
 		_cur_resolution = old_res;
@@ -1498,7 +1554,7 @@ void VideoDriver_Win32OpenGL::ToggleVsync(bool vsync)
 	if (_wglSwapIntervalEXT != nullptr) {
 		_wglSwapIntervalEXT(vsync);
 	} else if (vsync) {
-		Debug(driver, 0, "OpenGL: Vsync requested, but not supported by driver");
+		Debug(Facility::Driver, Severity::Critical, "OpenGL: Vsync requested, but not supported by driver");
 	}
 }
 
@@ -1517,7 +1573,7 @@ std::optional<std::string_view> VideoDriver_Win32OpenGL::AllocateContext()
 		int attribs[] = {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
 			WGL_CONTEXT_MINOR_VERSION_ARB, 5,
-			WGL_CONTEXT_FLAGS_ARB, _debug_driver_level >= 8 ? WGL_CONTEXT_DEBUG_BIT_ARB : 0,
+			WGL_CONTEXT_FLAGS_ARB, IsVisibleSeverity(Facility::Driver, Severity::Trace2) ? WGL_CONTEXT_DEBUG_BIT_ARB : 0,
 			_hasWGLARBCreateContextProfile ? WGL_CONTEXT_PROFILE_MASK_ARB : 0, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, // Terminate list if WGL_ARB_create_context_profile isn't supported.
 			0
 		};
@@ -1594,6 +1650,7 @@ void *VideoDriver_Win32OpenGL::GetVideoPointer()
 {
 	if (BlitterFactory::GetCurrentBlitter()->NeedsAnimationBuffer()) {
 		this->anim_buffer = OpenGLBackend::Get()->GetAnimBuffer();
+		this->anim_pitch = _screen.pitch;
 	}
 	return OpenGLBackend::Get()->GetVideoBuffer();
 }
@@ -1605,22 +1662,23 @@ void VideoDriver_Win32OpenGL::ReleaseVideoPointer()
 	this->dirty_rect = {};
 	_screen.dst_ptr = nullptr;
 	this->anim_buffer = nullptr;
+	this->anim_pitch = 0;
 }
 
 void VideoDriver_Win32OpenGL::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
-	if (_local_palette.count_dirty != 0) {
+	if (this->local_palette.count_dirty != 0) {
 		Blitter *blitter = BlitterFactory::GetCurrentBlitter();
 
 		/* Always push a changed palette to OpenGL. */
-		OpenGLBackend::Get()->UpdatePalette(_local_palette.palette, _local_palette.first_dirty, _local_palette.count_dirty);
+		OpenGLBackend::Get()->UpdatePalette(this->local_palette.palette, this->local_palette.first_dirty, this->local_palette.count_dirty);
 		if (blitter->UsePaletteAnimation() == Blitter::PaletteAnimation::Blitter) {
-			blitter->PaletteAnimate(_local_palette);
+			blitter->PaletteAnimate(this->local_palette);
 		}
 
-		_local_palette.count_dirty = 0;
+		this->local_palette.count_dirty = 0;
 	}
 
 	OpenGLBackend::Get()->Paint();

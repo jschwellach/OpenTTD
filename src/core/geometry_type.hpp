@@ -16,6 +16,43 @@
 #	define Point OTTD_Point
 #endif /* __APPLE__ */
 
+/** Horizontal alignments. */
+enum class AlignmentH : uint8_t {
+	Start, ///< Align to the start, LTR/RTL aware.
+	Centre, ///< Align to the centre.
+	End, ///< Align to the end, LTR/RTL aware.
+	ForceLeft, ///< Force align to the left.
+	ForceRight, ///< Force align to the right.
+};
+
+/** Vertical alignments. */
+enum class AlignmentV : uint8_t {
+	Top, ///< Align to the top.
+	Middle, ///< Align to the middle.
+	Bottom, ///< Align to the bottom.
+};
+
+/** Horizontal and vertical alignment. */
+struct Alignment {
+	AlignmentH h; ///< Horizontal alignment.
+	AlignmentV v; ///< Vertical alignment.
+
+	/**
+	 * Construct an alignment with the specified horizontal and vertical alignment.
+	 * @param h The horizontal alignment.
+	 * @param v The vertical alignment.
+	 */
+	constexpr Alignment(AlignmentH h, AlignmentV v) : h(h), v(v) {}
+
+	/**
+	 * Construct an alignment with the specific horizontal alignment.
+	 * @param h The horizontal alignment.
+	 */
+	constexpr Alignment(AlignmentH h) : Alignment(h, AlignmentV::Top) {}
+
+	AlignmentH ResolveRTL() const;
+};
+
 /**
  * Determine where to position a centred object.
  * @param min The top or left coordinate.
@@ -36,6 +73,12 @@ struct Coord2D {
 
 	constexpr Coord2D() = default;
 	constexpr Coord2D(T x, T y) : x(x), y(y) {}
+
+	/**
+	 * Compare with another instance of this class.
+	 * @return The std::strong_ordering of the comparison.
+	 */
+	constexpr auto operator<=>(const Coord2D<T> &) const = default;
 };
 
 /** A coordinate with three dimensions. */
@@ -47,6 +90,12 @@ struct Coord3D {
 
 	constexpr Coord3D() = default;
 	constexpr Coord3D(T x, T y, T z) : x(x), y(y), z(z) {}
+
+	/**
+	 * Compare with another instance of this class.
+	 * @return The std::strong_ordering of the comparison.
+	 */
+	constexpr auto operator<=>(const Coord3D<T> &) const = default;
 };
 
 /** Coordinates of a point in 2D */
@@ -54,23 +103,25 @@ using Point = Coord2D<int>;
 
 /** Dimensions (a width and height) of a rectangle in 2D */
 struct Dimension {
-	uint width;
-	uint height;
+	using value_type = uint32_t; ///< The type of the values; hack to make this look enough like a std::array for saving/loading resolutions
+	value_type width = 0; ///< The width of the rectangle.
+	value_type height = 0; ///< The height of the rectangle.
 
-	constexpr Dimension() : width(0), height(0) {}
-	constexpr Dimension(uint w, uint h) : width(w), height(h) {}
+	/** Create a 0x0 dimension. */
+	constexpr Dimension() = default;
 
-	bool operator< (const Dimension &other) const
-	{
-		int x = this->width - other.width;
-		if (x != 0) return x < 0;
-		return this->height < other.height;
-	}
+	/**
+	 * Create a dimension.
+	 * @param w The width.
+	 * @param h The height.
+	 */
+	constexpr Dimension(value_type w, value_type h) : width(w), height(h) {}
 
-	bool operator== (const Dimension &other) const
-	{
-		return this->width == other.width && this->height == other.height;
-	}
+	/**
+	 * Compare with another instance of this class.
+	 * @return The std::strong_ordering of the comparison.
+	 */
+	constexpr auto operator<=>(const Dimension &) const noexcept = default;
 };
 
 /** Padding dimensions to apply to each side of a Rect. */
@@ -250,6 +301,17 @@ struct Rect {
 	{
 		/* This is a local version of IsInsideMM, to avoid including math_func everywhere. */
 		return (uint)(pt.x - this->left) <= (uint)(this->right - this->left) && (uint)(pt.y - this->top) <= (uint)(this->bottom - this->top);
+	}
+
+	/**
+	 * Centre a horizontal dimension within this Rect.
+	 * @param width The horizontal dimension.
+	 * @return the new resized Rect.
+	 */
+	[[nodiscard]] inline Rect CentreToWidth(int width) const
+	{
+		int new_left = CentreBounds(this->left, this->right, width);
+		return {new_left, this->top, new_left + width - 1, this->bottom};
 	}
 
 	/**

@@ -21,8 +21,8 @@
 #include <signal.h>
 #include <pthread.h>
 
-#ifdef WITH_SDL2
-#include <SDL.h>
+#ifdef WITH_SDL3
+#include <SDL3/SDL_clipboard.h>
 #endif
 
 #ifdef WITH_ICONV
@@ -135,7 +135,7 @@ static std::string convert_tofrom_fs(iconv_t convd, std::string_view name)
 	char *outbuf = buf.data();
 	iconv(convd, nullptr, nullptr, nullptr, nullptr);
 	if (iconv(convd, &inbuf, &inlen, &outbuf, &outlen) == SIZE_MAX) {
-		Debug(misc, 0, "[iconv] error converting '{}'. Errno {}", name, errno);
+		Debug(Facility::Misc, Severity::Critical, "[iconv] error converting '{}'. Errno {}", name, errno);
 		return std::string{name};
 	}
 
@@ -150,7 +150,7 @@ static std::optional<iconv_t> OpenIconv(std::string from, std::string to)
 {
 	iconv_t convd = iconv_open(from.c_str(), to.c_str());
 	if (convd == reinterpret_cast<iconv_t>(-1)) {
-		Debug(misc, 0, "[iconv] conversion from codeset '{}' to '{}' unsupported", from, to);
+		Debug(Facility::Misc, Severity::Critical, "[iconv] conversion from codeset '{}' to '{}' unsupported", from, to);
 		return std::nullopt;
 	}
 	return convd;
@@ -204,8 +204,8 @@ void ShowOSErrorBox(std::string_view buf, bool)
 #ifndef WITH_COCOA
 std::optional<std::string> GetClipboardContents()
 {
-#ifdef WITH_SDL2
-	if (SDL_HasClipboardText() == SDL_FALSE) return std::nullopt;
+#ifdef WITH_SDL3
+	if (!SDL_HasClipboardText()) return std::nullopt;
 
 	char *clip = SDL_GetClipboardText();
 	if (clip != nullptr) {
@@ -237,7 +237,7 @@ void OSOpenBrowser(const std::string &url)
 	args[1] = url.c_str();
 	args[2] = nullptr;
 	execvp(args[0], const_cast<char * const *>(args));
-	Debug(misc, 0, "Failed to open url: {}", url);
+	Debug(Facility::Misc, Severity::Critical, "Failed to open url: {}", url);
 	exit(0);
 }
 #endif /* __APPLE__ */

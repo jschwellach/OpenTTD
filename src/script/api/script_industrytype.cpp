@@ -13,7 +13,6 @@
 #include "script_map.hpp"
 #include "script_error.hpp"
 #include "../../strings_func.h"
-#include "../../industry.h"
 #include "../../newgrf_industries.h"
 #include "../../industry_cmd.h"
 
@@ -161,6 +160,5 @@
 {
 	EnforcePrecondition(IT_INVALID, IsInsideBS(grf_local_id, 0x00, NUM_INDUSTRYTYPES_PER_GRF));
 
-	grfid = std::byteswap(GB(grfid, 0, 32)); // Match people's expectations.
-	return _industry_mngr.GetID(grf_local_id, grfid);
+	return _industry_mngr.GetID(grf_local_id, UnflattenNewGRFLabel<GrfID>(std::byteswap(static_cast<uint32_t>(grfid))));
 }

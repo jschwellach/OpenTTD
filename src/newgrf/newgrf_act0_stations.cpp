@@ -32,7 +32,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 	ChangeInfoResult ret = ChangeInfoResult::Success;
 
 	if (last > NUM_STATIONS_PER_GRF) {
-		GrfMsg(1, "StationChangeInfo: Station {} is invalid, max {}, ignoring", last, NUM_STATIONS_PER_GRF);
+		GrfMsg(Severity::Error, "StationChangeInfo: Station {} is invalid, max {}, ignoring", last, NUM_STATIONS_PER_GRF);
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -44,22 +44,19 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 
 		/* Check that the station we are modifying is defined. */
 		if (statspec == nullptr && prop != 0x08) {
-			GrfMsg(2, "StationChangeInfo: Attempt to modify undefined station {}, ignoring", id);
+			GrfMsg(Severity::Warning, "StationChangeInfo: Attempt to modify undefined station {}, ignoring", id);
 			return ChangeInfoResult::InvalidId;
 		}
 
 		switch (prop) {
-			case 0x08: { // Class ID
+			case 0x08: // Class ID
 				/* Property 0x08 is special; it is where the station is allocated */
 				if (statspec == nullptr) {
 					statspec = std::make_unique<StationSpec>();
 				}
 
-				/* Swap classid because we read it in BE meaning WAYP or DFLT */
-				uint32_t classid = buf.ReadDWord();
-				statspec->class_index = StationClass::Allocate(std::byteswap(classid));
+				statspec->class_index = StationClass::Allocate(buf.ReadLabel<StationClass::GlobalID>());
 				break;
-			}
 
 			case 0x09: { // Define sprite layout
 				uint16_t tiles = buf.ReadExtendedByte();
@@ -106,7 +103,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 
 				/* Number of layouts must be even, alternating X and Y */
 				if (statspec->renderdata.size() & 1) {
-					GrfMsg(1, "StationChangeInfo: Station {} defines an odd number of sprite layouts, dropping the last item", id);
+					GrfMsg(Severity::Error, "StationChangeInfo: Station {} defines an odd number of sprite layouts, dropping the last item", id);
 					statspec->renderdata.pop_back();
 				}
 				break;
@@ -117,7 +114,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 				const StationSpec *srcstatspec = srcid >= _cur_gps.grffile->stations.size() ? nullptr : _cur_gps.grffile->stations[srcid].get();
 
 				if (srcstatspec == nullptr) {
-					GrfMsg(1, "StationChangeInfo: Station {} is not defined, cannot copy sprite layout to {}.", srcid, id);
+					GrfMsg(Severity::Error, "StationChangeInfo: Station {} is not defined, cannot copy sprite layout to {}.", srcid, id);
 					continue;
 				}
 
@@ -131,7 +128,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 			}
 
 			case 0x0B: // Callback mask
-				statspec->callback_mask = static_cast<StationCallbackMasks>(buf.ReadByte());
+				statspec->callback_mask = StationCallbackMasks{buf.ReadByte()};
 				break;
 
 			case 0x0C: // Disallowed number of platforms
@@ -158,7 +155,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 					/* Ensure the first bit, axis, is zero. The rest of the value is validated during rendering, as we don't know the range yet. */
 					for (auto &tile : layout) {
 						if ((tile & ~1U) != tile) {
-							GrfMsg(1, "StationChangeInfo: Invalid tile {} in layout {}x{}", tile, length, number);
+							GrfMsg(Severity::Error, "StationChangeInfo: Invalid tile {} in layout {}x{}", tile, length, number);
 							tile &= ~1U;
 						}
 					}
@@ -170,7 +167,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 				const StationSpec *srcstatspec = srcid >= _cur_gps.grffile->stations.size() ? nullptr : _cur_gps.grffile->stations[srcid].get();
 
 				if (srcstatspec == nullptr) {
-					GrfMsg(1, "StationChangeInfo: Station {} is not defined, cannot copy tile layout to {}.", srcid, id);
+					GrfMsg(Severity::Error, "StationChangeInfo: Station {} is not defined, cannot copy tile layout to {}.", srcid, id);
 					continue;
 				}
 
@@ -199,7 +196,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 				if (_cur_gps.grffile->grf_version >= 7) {
 					statspec->cargo_triggers = TranslateRefitMask(buf.ReadDWord());
 				} else {
-					statspec->cargo_triggers = (CargoTypes)buf.ReadDWord();
+					statspec->cargo_triggers = static_cast<CargoTypes>(buf.ReadDWord());
 				}
 				break;
 
@@ -235,7 +232,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 
 			case 0x16: // Animation info
 				statspec->animation.frames = buf.ReadByte();
-				statspec->animation.status = static_cast<AnimationStatus>(buf.ReadByte());
+				statspec->animation.status = AnimationStatus{buf.ReadByte()};
 				break;
 
 			case 0x17: // Animation speed
@@ -243,7 +240,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 				break;
 
 			case 0x18: // Animation triggers
-				statspec->animation.triggers = static_cast<StationAnimationTriggers>(buf.ReadWord());
+				statspec->animation.triggers = StationAnimationTriggers{buf.ReadWord()};
 				break;
 
 			/* 0x19 road routing (not implemented) */
@@ -262,7 +259,7 @@ static ChangeInfoResult StationChangeInfo(uint first, uint last, int prop, ByteR
 
 				/* Number of layouts must be even, alternating X and Y */
 				if (statspec->renderdata.size() & 1) {
-					GrfMsg(1, "StationChangeInfo: Station {} defines an odd number of sprite layouts, dropping the last item", id);
+					GrfMsg(Severity::Error, "StationChangeInfo: Station {} defines an odd number of sprite layouts, dropping the last item", id);
 					statspec->renderdata.pop_back();
 				}
 				break;

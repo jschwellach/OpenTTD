@@ -11,9 +11,7 @@
 #define NETWORK_CORE_ADDRESS_H
 
 #include "os_abstraction.h"
-#include "config.h"
 #include "../../company_type.h"
-#include "../../string_func.h"
 
 
 class NetworkAddress;
@@ -172,9 +170,9 @@ public:
  *
  * Sorting will prefer entries at the top of this list above ones at the bottom.
  */
-enum ServerAddressType : uint8_t {
-	SERVER_ADDRESS_DIRECT,      ///< Server-address is based on an hostname:port.
-	SERVER_ADDRESS_INVITE_CODE, ///< Server-address is based on an invite code.
+enum class ServerAddressType : uint8_t {
+	Direct, ///< Server-address is based on an hostname:port.
+	InviteCode, ///< Server-address is based on an invite code.
 };
 
 /**

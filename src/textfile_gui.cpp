@@ -10,7 +10,6 @@
 #include "stdafx.h"
 #include "core/backup_type.hpp"
 #include "fileio_func.h"
-#include "fontcache.h"
 #include "gfx_type.h"
 #include "gfx_func.h"
 #include "string_func.h"
@@ -78,12 +77,12 @@ static constexpr std::initializer_list<NWidgetPart> _nested_textfile_widgets = {
 /** Window definition for the textfile window */
 static WindowDesc _textfile_desc(
 	WindowPosition::Center, "textfile", 630, 460,
-	WC_TEXTFILE, WC_NONE,
+	WindowClass::Textfile, WindowClass::None,
 	{},
 	_nested_textfile_widgets
 );
 
-TextfileWindow::TextfileWindow(Window *parent, TextfileType file_type) : Window(_textfile_desc), BaseStringMissingGlyphSearcher(FontSize::Monospace), file_type(file_type)
+TextfileWindow::TextfileWindow(Window *parent, TextfileType file_type) : Window(_textfile_desc), file_type(file_type)
 {
 	/* Init of nested tree is deferred.
 	 * TextfileWindow::ConstructWindow must be called by the inheriting window. */
@@ -95,7 +94,7 @@ void TextfileWindow::ConstructWindow()
 	this->CreateNestedTree();
 	this->vscroll = this->GetScrollbar(WID_TF_VSCROLLBAR);
 	this->hscroll = this->GetScrollbar(WID_TF_HSCROLLBAR);
-	this->GetWidget<NWidgetCore>(WID_TF_CAPTION)->SetStringTip(STR_TEXTFILE_README_CAPTION + this->file_type, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS);
+	this->GetWidget<NWidgetCore>(WID_TF_CAPTION)->SetStringTip(STR_TEXTFILE_README_CAPTION + to_underlying(this->file_type), STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS);
 	this->GetWidget<NWidgetStacked>(WID_TF_SEL_JUMPLIST)->SetDisplayedPlane(SZSP_HORIZONTAL);
 	this->FinishInitNested(this->file_type);
 
@@ -297,7 +296,7 @@ const TextfileWindow::Hyperlink *TextfileWindow::GetHyperlink(Point pt) const
 
 	size_t line_index = it - this->lines.cbegin();
 	size_t subline = clicked_row - (visible_line - it->num_lines);
-	Debug(misc, 4, "TextfileWindow check hyperlink: clicked_row={}, line_index={}, line.top={}, subline={}", clicked_row, line_index, visible_line - it->num_lines, subline);
+	Debug(Facility::Misc, Severity::Info, "TextfileWindow check hyperlink: clicked_row={}, line_index={}, line.top={}, subline={}", clicked_row, line_index, visible_line - it->num_lines, subline);
 
 	/* Find hyperlinks in this line. */
 	std::vector<const Hyperlink *> found_links;
@@ -312,13 +311,13 @@ const TextfileWindow::Hyperlink *TextfileWindow::GetHyperlink(Point pt) const
 	assert(subline < layout.size());
 	ptrdiff_t char_index = layout.GetCharAtPosition(pt.x - WidgetDimensions::scaled.frametext.left, subline);
 	if (char_index < 0) return nullptr;
-	Debug(misc, 4, "TextfileWindow check hyperlink click: line={}, subline={}, char_index={}", line_index, subline, char_index);
+	Debug(Facility::Misc, Severity::Info, "TextfileWindow check hyperlink click: line={}, subline={}, char_index={}", line_index, subline, char_index);
 
 	/* Found character index in line, check if any links are at that position. */
 	for (const Hyperlink *link : found_links) {
-		Debug(misc, 4, "Checking link from char {} to {}", link->begin, link->end);
+		Debug(Facility::Misc, Severity::Info, "Checking link from char {} to {}", link->begin, link->end);
 		if (static_cast<size_t>(char_index) >= link->begin && static_cast<size_t>(char_index) < link->end) {
-			Debug(misc, 4, "Returning link with destination: {}", link->destination);
+			Debug(Facility::Misc, Severity::Info, "Returning link with destination: {}", link->destination);
 			return link;
 		}
 	}
@@ -495,7 +494,7 @@ void TextfileWindow::AfterLoadMarkdown()
 		/* All lines beginning with # are headings. */
 		if (!line.text.empty() && line.text[0] == '#') {
 			this->jumplist.push_back(line_index);
-			this->lines[line_index].colour = TC_GOLD;
+			this->lines[line_index].colour = TextColour::Gold;
 			this->link_anchors.emplace_back(line_index, 0, 0, MakeAnchorSlug(line.text));
 		}
 	}
@@ -532,6 +531,16 @@ void TextfileWindow::AfterLoadMarkdown()
 			break;
 		}
 	}
+}
+
+/* virtual */ void TextfileWindow::OnX1Click([[maybe_unused]] Point pt, [[maybe_unused]] WidgetID widget)
+{
+	this->NavigateHistory(-1);
+}
+
+/* virtual */ void TextfileWindow::OnX2Click([[maybe_unused]] Point pt, [[maybe_unused]] WidgetID widget)
+{
+	this->NavigateHistory(1);
 }
 
 /* virtual */ bool TextfileWindow::OnTooltip([[maybe_unused]] Point pt, WidgetID widget, TooltipCloseCondition close_cond)
@@ -582,9 +591,9 @@ void TextfileWindow::AfterLoadMarkdown()
 		int y_offset = (top - pos) * line_height;
 		if (line.wrapped_width != 0) {
 			Rect tr = fr.WithWidth(line.wrapped_width, _current_text_dir == TD_RTL);
-			DrawStringMultiLineWithClipping(tr.left, tr.right, y_offset, y_offset + line.num_lines * line_height, line.text, line.colour, SA_TOP | SA_LEFT, false, FontSize::Monospace);
+			DrawStringMultiLineWithClipping(tr.left, tr.right, y_offset, y_offset + line.num_lines * line_height, line.text, line.colour, {AlignmentH::Start, AlignmentV::Top}, false, FontSize::Monospace);
 		} else {
-			DrawString(fr.left, fr.right, y_offset, line.text, line.colour, SA_TOP | SA_LEFT, false, FontSize::Monospace);
+			DrawString(fr.left, fr.right, y_offset, line.text, line.colour, {AlignmentH::Start, AlignmentV::Top}, false, FontSize::Monospace);
 		}
 	}
 }
@@ -912,7 +921,7 @@ void TextfileWindow::LoadText(std::string_view buf)
 	this->AfterLoadText();
 	this->ReflowContent();
 
-	CheckForMissingGlyphs(this);
+	CheckForMissingGlyphs(FontSize::Monospace, this);
 
 	/* The font may have changed when searching for glyphs, so ensure widget sizes are updated just in case. */
 	this->ReInit();
@@ -927,15 +936,14 @@ void TextfileWindow::LoadText(std::string_view buf)
  */
 std::optional<std::string> GetTextfile(TextfileType type, Subdirectory dir, std::string_view filename)
 {
-	static const std::string_view prefixes[] = {
+	static const EnumIndexArray<std::string_view, TextfileType, TextfileType::ContentEnd> prefixes = {
 		"readme",
 		"changelog",
 		"license",
 	};
-	static_assert(lengthof(prefixes) == TFT_CONTENT_END);
 
 	/* Only the generic text file types allowed for this function */
-	if (type >= TFT_CONTENT_END) return std::nullopt;
+	if (type >= TextfileType::ContentEnd) return std::nullopt;
 
 	std::string_view prefix = prefixes[type];
 

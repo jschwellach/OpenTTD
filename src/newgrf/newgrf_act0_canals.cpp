@@ -26,21 +26,21 @@ static ChangeInfoResult CanalChangeInfo(uint first, uint last, int prop, ByteRea
 {
 	ChangeInfoResult ret = ChangeInfoResult::Success;
 
-	if (last > CF_END) {
-		GrfMsg(1, "CanalChangeInfo: Canal feature 0x{:02X} is invalid, max {}, ignoring", last, CF_END);
+	if (last > to_underlying(CanalFeature::End)) {
+		GrfMsg(Severity::Error, "CanalChangeInfo: Canal feature 0x{:02X} is invalid, max {}, ignoring", last, CanalFeature::End);
 		return ChangeInfoResult::InvalidId;
 	}
 
 	for (uint id = first; id < last; ++id) {
-		CanalProperties *cp = &_cur_gps.grffile->canal_local_properties[id];
+		CanalProperties *cp = &_cur_gps.grffile->canal_local_properties[static_cast<CanalFeature>(id)];
 
 		switch (prop) {
 			case 0x08:
-				cp->callback_mask = static_cast<CanalCallbackMasks>(buf.ReadByte());
+				cp->callback_mask = CanalCallbackMasks{buf.ReadByte()};
 				break;
 
 			case 0x09:
-				cp->flags = buf.ReadByte();
+				cp->flags = CanalFeatureFlags{buf.ReadByte()};
 				break;
 
 			default:

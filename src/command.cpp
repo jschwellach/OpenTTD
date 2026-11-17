@@ -12,7 +12,6 @@
 #include "error.h"
 #include "gui.h"
 #include "command_func.h"
-#include "network/network_type.h"
 #include "network/network.h"
 #include "genworld.h"
 #include "strings_func.h"
@@ -80,10 +79,10 @@ struct CommandInfo {
 };
 /* Helpers to generate the master command table from the command traits. */
 template <typename T>
-inline constexpr CommandInfo CommandFromTrait() noexcept { return { T::name, T::flags, T::type }; };
+constexpr CommandInfo CommandFromTrait() noexcept { return { T::name, T::flags, T::type }; };
 
 template <typename T, T... i>
-inline constexpr auto MakeCommandsFromTraits(std::integer_sequence<T, i...>) noexcept {
+constexpr auto MakeCommandsFromTraits(std::integer_sequence<T, i...>) noexcept {
 	return EnumIndexArray<CommandInfo, Commands, static_cast<Commands>(sizeof...(i))>{{{ CommandFromTrait<CommandTraits<static_cast<Commands>(i)>>()... }}};
 }
 
@@ -151,7 +150,7 @@ bool IsCommandAllowedWhilePaused(Commands cmd)
 	static_assert(std::size(command_type_lookup) == to_underlying(CommandType::End));
 
 	assert(IsValidCommand(cmd));
-	return _game_mode == GM_EDITOR || command_type_lookup[to_underlying(_command_table[cmd].type)] <= _settings_game.construction.command_pause_level;
+	return _game_mode == GameMode::Editor || command_type_lookup[to_underlying(_command_table[cmd].type)] <= _settings_game.construction.command_pause_level;
 }
 
 /**
@@ -204,7 +203,7 @@ std::tuple<bool, bool, bool> CommandHelperBase::InternalPostBefore(Commands cmd,
 	 * However, in case of incoming network commands,
 	 * map generation or the pause button we do want
 	 * to execute. */
-	bool estimate_only = _shift_pressed && IsLocalCompany() && !_generating_world && !network_command && !flags.Test(CommandFlag::NoEst);
+	bool estimate_only = IsShiftPressed() && IsLocalCompany() && !_generating_world && !network_command && !flags.Test(CommandFlag::NoEst);
 
 	/* We're only sending the command, so don't do
 	 * fancy things for 'success'. */
@@ -212,7 +211,7 @@ std::tuple<bool, bool, bool> CommandHelperBase::InternalPostBefore(Commands cmd,
 
 	if (_pause_mode.Any() && !IsCommandAllowedWhilePaused(cmd) && !estimate_only) {
 		ShowErrorMessage(GetEncodedString(err_message), GetEncodedString(STR_ERROR_NOT_ALLOWED_WHILE_PAUSED),
-			WL_INFO, TileX(tile) * TILE_SIZE, TileY(tile) * TILE_SIZE);
+			WarningLevel::Info, TileX(tile) * TILE_SIZE, TileY(tile) * TILE_SIZE);
 		return { true, estimate_only, only_sending };
 	} else {
 		return { false, estimate_only, only_sending };
@@ -240,7 +239,7 @@ void CommandHelperBase::InternalPostResult(CommandCost &res, TileIndex tile, boo
 		}
 	} else if (estimate_only) {
 		ShowEstimatedCostOrIncome(res.GetCost(), x, y);
-	} else if (!only_sending && tile != 0 && IsLocalCompany() && _game_mode != GM_EDITOR) {
+	} else if (!only_sending && tile != 0 && IsLocalCompany() && _game_mode != GameMode::Editor) {
 		/* Only show the cost animation when we did actually
 		 * execute the command, i.e. we're not sending it to
 		 * the server, when it has cost the local company
@@ -259,7 +258,7 @@ void CommandHelperBase::InternalPostResult(CommandCost &res, TileIndex tile, boo
  */
 void CommandHelperBase::LogCommandExecution(Commands cmd, StringID err_message, const CommandDataBuffer &args, bool failed)
 {
-	Debug(desync, 1, "{}: {:08x}; {:02x}; {:02x}; {:08x}; {:08x}; {} ({})", failed ? "cmdf" : "cmd", (uint32_t)TimerGameEconomy::date.base(), TimerGameEconomy::date_fract, _current_company, cmd, err_message, FormatArrayAsHex(args), GetCommandName(cmd));
+	Debug(Facility::Desync, Severity::Error, "{}: {:08x}; {:02x}; {:02x}; {:08x}; {:08x}; {} ({})", failed ? "cmdf" : "cmd", (uint32_t)TimerGameEconomy::date.base(), TimerGameEconomy::date_fract, _current_company, cmd, err_message, FormatArrayAsHex(args), GetCommandName(cmd));
 }
 
 /**
@@ -276,7 +275,7 @@ bool CommandHelperBase::InternalExecutePrepTest(CommandFlags cmd_flags, Backup<C
 	/* If the company isn't valid it may only do server command or start a new company!
 	 * The server will ditch any server commands a client sends to it, so effectively
 	 * this guards the server from executing functions for an invalid company. */
-	if (_game_mode == GM_NORMAL && !exec_as_spectator && !Company::IsValidID(_current_company) && !(_current_company == OWNER_DEITY && cmd_flags.Test(CommandFlag::Deity))) {
+	if (_game_mode == GameMode::Normal && !exec_as_spectator && !Company::IsValidID(_current_company) && !(_current_company == OWNER_DEITY && cmd_flags.Test(CommandFlag::Deity))) {
 		return false;
 	}
 
@@ -324,7 +323,7 @@ std::tuple<bool, bool, bool> CommandHelperBase::InternalExecuteValidateTestAndPr
 		BasePersistentStorageArray::SwitchMode(PSM_ENTER_COMMAND);
 	}
 
-	return { false, _debug_desync_level >= 1, send_net };
+	return { false, IsVisibleSeverity(Facility::Desync, Severity::Error), send_net };
 }
 
 /**

@@ -16,7 +16,7 @@
 #include "town_map.h"
 #include "subsidy_type.h"
 #include "newgrf_storage.h"
-#include "cargotype.h"
+#include "cargo_type.h"
 
 template <typename T>
 struct BuildingCounts {
@@ -45,6 +45,7 @@ enum class TownFlag : uint8_t {
 	CustomGrowth = 3, ///< Growth rate is controlled by GS.
 };
 
+/** Bitset of \c TownFlag elements. */
 using TownFlags = EnumBitSet<TownFlag, uint8_t>;
 
 /** Data structure with cached data of towns. */
@@ -67,9 +68,9 @@ struct Town : TownPool::PoolItem<&_town_pool> {
 
 	/** @name Town name.
 	 * @{ */
-	uint32_t townnamegrfid = 0;
-	uint16_t townnametype = 0;
-	uint32_t townnameparts = 0;
+	GrfID townnamegrfid{}; ///< NewGRF id that contains the name. O is not used.
+	uint16_t townnametype = 0; ///< The style of the name.
+	uint32_t townnameparts = 0; ///< Random number that give unique town name when passed to generator.
 	std::string name{}; ///< Custom town name. If empty, the town was not renamed and uses the generated name.
 	mutable std::string cached_name{}; ///< NOSAVE: Cache of the resolved name of the town, if not using a custom town name
 	/** @} */
@@ -304,9 +305,9 @@ enum class TownAction : uint8_t {
 	Bribe, ///< Try to bribe the council.
 	End, ///< End marker.
 };
-using TownActions = EnumBitSet<TownAction, uint8_t>;
 
-DECLARE_INCREMENT_DECREMENT_OPERATORS(TownAction);
+/** Bitset of \c TownAction elements. */
+using TownActions = EnumBitSet<TownAction, uint8_t>;
 
 void ClearTownHouse(Town *t, TileIndex tile);
 void UpdateTownMaxPass(Town *t);
@@ -319,6 +320,7 @@ void SetTownRatingTestMode(bool mode);
 TownActions GetMaskOfTownActions(CompanyID cid, const Town *t);
 uint GetDefaultTownsForMapSize();
 bool GenerateTowns(TownLayout layout, std::optional<uint> number = std::nullopt);
+Town *TryGenerateNamedTownAroundTile(TileIndex target_tile, TownSize size, bool city, TownLayout layout, std::string_view name);
 const CargoSpec *FindFirstCargoWithTownAcceptanceEffect(TownAcceptanceEffect effect);
 CargoArray GetAcceptedCargoOfHouse(const HouseSpec *hs);
 

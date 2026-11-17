@@ -17,6 +17,7 @@
 #include "aircraft.h"
 #include "newgrf_text.h"
 #include "vehicle_func.h"
+#include "vehicle_gui.h"
 #include "string_func.h"
 #include "depot_map.h"
 #include "vehiclelist.h"
@@ -38,6 +39,8 @@
 #include "train_cmd.h"
 #include "ship_cmd.h"
 #include <charconv>
+
+#include "widgets/vehicle_widget.h"
 
 #include "table/strings.h"
 
@@ -202,9 +205,9 @@ std::tuple<CommandCost, VehicleID, uint, uint16_t, CargoArray> CmdBuildVehicle(D
 				NormalizeTrainVehInDepot(Train::From(v));
 			}
 
-			InvalidateWindowData(WC_VEHICLE_DEPOT, v->tile);
+			InvalidateWindowData(WindowClass::VehicleDepot, v->tile);
 			InvalidateWindowClassesData(GetWindowClassForVehicleType(type), 0);
-			SetWindowDirty(WC_COMPANY, _current_company);
+			SetWindowDirty(WindowClass::Company, _current_company);
 			if (IsLocalCompany()) {
 				InvalidateAutoreplaceWindow(v->engine_type, v->group_id); // updates the auto replace window (must be called before incrementing num_engines)
 			}
@@ -225,7 +228,7 @@ std::tuple<CommandCost, VehicleID, uint, uint16_t, CargoArray> CmdBuildVehicle(D
 
 		/* If we are not in DoCommandFlag::Execute undo everything */
 		if (flags != subflags) {
-			Command<Commands::SellVehicle>::Do(DoCommandFlag::Execute, v->index, false, false, INVALID_CLIENT_ID);
+			Command<Commands::SellVehicle>::Do(DoCommandFlag::Execute, v->index, false, false, ClientID::Invalid);
 		}
 	}
 
@@ -542,7 +545,7 @@ std::tuple<CommandCost, uint, uint16_t, CargoArray> CmdRefitVehicle(DoCommandFla
 				break;
 			case VehicleType::Road:
 				RoadVehUpdateCache(RoadVehicle::From(front), auto_refit);
-				if (_settings_game.vehicle.roadveh_acceleration_model != AM_ORIGINAL) RoadVehicle::From(front)->CargoChanged();
+				if (_settings_game.vehicle.roadveh_acceleration_model != AccelerationModel::Original) RoadVehicle::From(front)->CargoChanged();
 				break;
 
 			case VehicleType::Ship:
@@ -560,10 +563,10 @@ std::tuple<CommandCost, uint, uint16_t, CargoArray> CmdRefitVehicle(DoCommandFla
 		front->MarkDirty();
 
 		if (!free_wagon) {
-			InvalidateWindowData(WC_VEHICLE_DETAILS, front->index);
+			InvalidateWindowData(WindowClass::VehicleDetails, front->index);
 			InvalidateWindowClassesData(GetWindowClassForVehicleType(v->type), 0);
 		}
-		SetWindowDirty(WC_VEHICLE_DEPOT, front->tile);
+		SetWindowDirty(WindowClass::VehicleDepot, front->tile);
 	} else {
 		/* Always invalidate the cache; querycost might have filled it. */
 		v->InvalidateNewGRFCacheOfChain();
@@ -653,10 +656,10 @@ CommandCost CmdStartStopVehicle(DoCommandFlags flags, VehicleID veh_id, bool eva
 		v->ResetDepotUnbunching();
 
 		v->MarkDirty();
-		SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
-		SetWindowDirty(WC_VEHICLE_DEPOT, v->GetMovingFront()->tile);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
+		SetWindowDirty(WindowClass::VehicleDepot, v->GetMovingFront()->tile);
 		SetWindowClassesDirty(GetWindowClassForVehicleType(v->type));
-		InvalidateWindowData(WC_VEHICLE_VIEW, v->index);
+		InvalidateWindowData(WindowClass::VehicleView, v->index);
 	}
 	return CommandCost();
 }
@@ -719,7 +722,7 @@ CommandCost CmdDepotSellAllVehicles(DoCommandFlags flags, TileIndex tile, Vehicl
 	CommandCost last_error = CMD_ERROR;
 	bool had_success = false;
 	for (const Vehicle *v : list) {
-		CommandCost ret = Command<Commands::SellVehicle>::Do(flags, v->index, true, false, INVALID_CLIENT_ID);
+		CommandCost ret = Command<Commands::SellVehicle>::Do(flags, v->index, true, false, ClientID::Invalid);
 		if (ret.Succeeded()) {
 			cost.AddCost(ret.GetCost());
 			had_success = true;
@@ -798,7 +801,6 @@ static void CloneVehicleName(const Vehicle *src, Vehicle *dst)
 		/* No digit at the end, so start at number 2. */
 		buf = src->name;
 		buf += " ";
-		number_position = buf.length();
 		num = 2;
 	} else {
 		/* Found digits, parse them and start at the next number. */
@@ -890,11 +892,11 @@ std::tuple<CommandCost, VehicleID> CmdCloneVehicle(DoCommandFlags flags, TileInd
 		if (flags.Test(DoCommandFlag::Execute) && !v->IsPrimaryVehicle()) build_flags.Set(DoCommandFlag::AutoReplace);
 
 		CommandCost cost;
-		std::tie(cost, new_veh_id, std::ignore, std::ignore, std::ignore) = Command<Commands::BuildVehicle>::Do(build_flags, tile, v->engine_type, false, INVALID_CARGO, INVALID_CLIENT_ID);
+		std::tie(cost, new_veh_id, std::ignore, std::ignore, std::ignore) = Command<Commands::BuildVehicle>::Do(build_flags, tile, v->engine_type, false, INVALID_CARGO, ClientID::Invalid);
 
 		if (cost.Failed()) {
 			/* Can't build a part, then sell the stuff we already made; clear up the mess */
-			if (w_front != nullptr) Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, INVALID_CLIENT_ID);
+			if (w_front != nullptr) Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, ClientID::Invalid);
 			return { cost, VehicleID::Invalid() };
 		}
 
@@ -918,8 +920,8 @@ std::tuple<CommandCost, VehicleID> CmdCloneVehicle(DoCommandFlags flags, TileInd
 				if (result.Failed()) {
 					/* The train can't be joined to make the same consist as the original.
 					 * Sell what we already made (clean up) and return an error.           */
-					Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, INVALID_CLIENT_ID);
-					Command<Commands::SellVehicle>::Do(flags, w->index,       true, false, INVALID_CLIENT_ID);
+					Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, ClientID::Invalid);
+					Command<Commands::SellVehicle>::Do(flags, w->index, true, false, ClientID::Invalid);
 					return { result, VehicleID::Invalid() }; // return error and the message returned from Commands::MoveRailVehicle
 				}
 			} else {
@@ -962,7 +964,7 @@ std::tuple<CommandCost, VehicleID> CmdCloneVehicle(DoCommandFlags flags, TileInd
 				/* Find out what's the best sub type */
 				uint8_t subtype = GetBestFittingSubType(v, w, v->cargo_type);
 				if (w->cargo_type != v->cargo_type || w->cargo_subtype != subtype) {
-					CommandCost cost = std::get<0>(Command<Commands::RefitVehicle>::Do(flags, w->index, v->cargo_type, subtype, false, true, 0));
+					CommandCost cost = ExtractCommandCost(Command<Commands::RefitVehicle>::Do(flags, w->index, v->cargo_type, subtype, false, true, 0));
 					if (cost.Succeeded()) total_cost.AddCost(cost.GetCost());
 				}
 
@@ -1000,7 +1002,7 @@ std::tuple<CommandCost, VehicleID> CmdCloneVehicle(DoCommandFlags flags, TileInd
 		CommandCost result = Command<Commands::CloneOrder>::Do(flags, (share_orders ? CO_SHARE : CO_COPY), w_front->index, v_front->index);
 		if (result.Failed()) {
 			/* The vehicle has already been bought, so now it must be sold again. */
-			Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, INVALID_CLIENT_ID);
+			Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, ClientID::Invalid);
 			return { result, VehicleID::Invalid() };
 		}
 
@@ -1011,7 +1013,7 @@ std::tuple<CommandCost, VehicleID> CmdCloneVehicle(DoCommandFlags flags, TileInd
 		 * check whether the company has enough money manually. */
 		if (!CheckCompanyHasMoney(total_cost)) {
 			/* The vehicle has already been bought, so now it must be sold again. */
-			Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, INVALID_CLIENT_ID);
+			Command<Commands::SellVehicle>::Do(flags, w_front->index, true, false, ClientID::Invalid);
 			return { total_cost, VehicleID::Invalid() };
 		}
 	}
@@ -1141,7 +1143,7 @@ CommandCost CmdChangeServiceInt(DoCommandFlags flags, VehicleID veh_id, uint16_t
 		v->SetServiceInterval(serv_int);
 		v->SetServiceIntervalIsCustom(is_custom);
 		v->SetServiceIntervalIsPercent(is_percent);
-		SetWindowDirty(WC_VEHICLE_DETAILS, v->index);
+		SetWindowDirty(WindowClass::VehicleDetails, v->index);
 	}
 
 	return CommandCost();

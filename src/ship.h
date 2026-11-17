@@ -18,7 +18,7 @@ WaterClass GetEffectiveWaterClass(TileIndex tile);
 
 /** Element of the ShipPathCache. */
 struct ShipPathElement {
-	Trackdir trackdir = INVALID_TRACKDIR; ///< Trackdir for this element.
+	Trackdir trackdir = Trackdir::Invalid; ///< Trackdir for this element.
 
 	constexpr ShipPathElement() {}
 	constexpr ShipPathElement(Trackdir trackdir) : trackdir(trackdir) {}
@@ -26,13 +26,21 @@ struct ShipPathElement {
 
 using ShipPathCache = std::vector<ShipPathElement>;
 
+/** Ship flags. */
+enum class VehicleShipFlag : uint8_t {
+	SecondEndFacingForward = 0, ///< Whether the other end is facing forward. Only applies to dual-ended ships.
+};
+/** Bitset of the %VehicleShipFlag elements. */
+using VehicleShipFlags = EnumBitSet<VehicleShipFlag, uint8_t>;
+
 /**
  * All ships have this type.
  */
 struct Ship final : public SpecializedVehicle<Ship, VehicleType::Ship> {
 	ShipPathCache path{}; ///< Cached path.
 	TrackBits state{}; ///< The "track" the ship is following.
-	Direction rotation = INVALID_DIR; ///< Visible direction.
+	Direction rotation = Direction::Invalid; ///< Visible direction.
+	VehicleShipFlags flags; ///< Ship-specific flags. @see VehicleShipFlags.
 	int16_t rotation_x_pos = 0; ///< NOSAVE: X Position before rotation.
 	int16_t rotation_y_pos = 0; ///< NOSAVE: Y Position before rotation.
 
@@ -50,7 +58,7 @@ struct Ship final : public SpecializedVehicle<Ship, VehicleType::Ship> {
 	int GetDisplayMaxSpeed() const override { return this->vcache.cached_max_speed / 2; }
 	int GetCurrentMaxSpeed() const override { return std::min<int>(this->vcache.cached_max_speed, this->current_order.GetMaxSpeed() * 2); }
 	Money GetRunningCost() const override;
-	bool IsInDepot() const override { return this->state == TRACK_BIT_DEPOT; }
+	bool IsInDepot() const override { return this->state == Track::Depot; }
 	bool Tick() override;
 	void OnNewCalendarDay() override;
 	void OnNewEconomyDay() override;

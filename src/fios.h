@@ -10,7 +10,6 @@
 #ifndef FIOS_H
 #define FIOS_H
 
-#include "gfx_type.h"
 #include "company_base.h"
 #include "newgrf_config.h"
 #include "gamelog.h"
@@ -23,6 +22,14 @@ enum SaveLoadInvalidateWindowData : uint8_t {
 	SLIWD_RESCAN_FILES,          ///< Rescan all files (when changed directory, ...)
 	SLIWD_SELECTION_CHANGES,     ///< File selection has changed (user click, ...)
 	SLIWD_FILTER_CHANGES,        ///< The filename filter has changed (via the editbox)
+};
+
+/** Outcome of a directory creation attempt. */
+enum class DirectoryCreateResult : uint8_t {
+	Success,            ///< Directory was created.
+	AlreadyExists,      ///< A file or directory with that name already exists.
+	PermissionDenied,   ///< The OS rejected the operation for permission reasons.
+	OtherError,         ///< Any other filesystem error.
 };
 
 using CompanyPropertiesMap = std::map<uint, std::unique_ptr<CompanyProperties>>;
@@ -105,6 +112,7 @@ std::string FiosGetCurrentPath();
 std::optional<uint64_t> FiosGetDiskFreeSpace(const std::string &path);
 std::string FiosMakeHeightmapName(std::string_view name);
 std::string FiosMakeSavegameName(std::string_view name);
+DirectoryCreateResult FiosCreateDirectory(std::string_view name);
 
 std::tuple<FiosType, std::string> FiosGetSavegameListCallback(SaveLoadOperation fop, std::string_view file, std::string_view ext);
 std::tuple<FiosType, std::string> FiosGetScenarioListCallback(SaveLoadOperation fop, std::string_view file, std::string_view ext);

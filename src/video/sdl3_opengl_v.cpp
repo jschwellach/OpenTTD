@@ -5,7 +5,7 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file sdl2_opengl_v.cpp Implementation of the OpenGL backend for SDL2 video driver. */
+/** @file sdl3_opengl_v.cpp Implementation of the OpenGL backend for SDL3 video driver. */
 
 /* XXX -- Temporary hack for Windows compile */
 #define WINGDIAPI
@@ -22,8 +22,8 @@
 #include "../fileio_func.h"
 #include "../framerate_type.h"
 #include "../window_func.h"
-#include "sdl2_opengl_v.h"
-#include <SDL.h>
+#include "sdl3_opengl_v.h"
+#include <SDL3/SDL_video.h>
 #include <mutex>
 #include <condition_variable>
 #include <GL/gl.h>
@@ -36,7 +36,7 @@
 
 #include "../safeguards.h"
 
-static FVideoDriver_SDL_OpenGL iFVideoDriver_SDL_OpenGL;
+static FVideoDriver_SDL_OpenGL iFVideoDriver_SDL_OpenGL; ///< The OpenGL SDL video driver.
 
 /**
  * Platform-specific callback to get an OpenGL function pointer.
@@ -90,12 +90,15 @@ void VideoDriver_SDL_OpenGL::Stop()
 	this->VideoDriver_SDL_Base::Stop();
 }
 
+/**
+ * Destroy and release the OpenGL context.
+ */
 void VideoDriver_SDL_OpenGL::DestroyContext()
 {
 	OpenGLBackend::Destroy();
 
 	if (this->gl_context != nullptr) {
-		SDL_GL_DeleteContext(this->gl_context);
+		SDL_GL_DestroyContext(this->gl_context);
 		this->gl_context = nullptr;
 	}
 }
@@ -105,6 +108,10 @@ void VideoDriver_SDL_OpenGL::ToggleVsync(bool vsync)
 	SDL_GL_SetSwapInterval(vsync);
 }
 
+/**
+ * Allocate the OpenGL context.
+ * @return Optional with an error message upon failure.
+ */
 std::optional<std::string_view> VideoDriver_SDL_OpenGL::AllocateContext()
 {
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -114,12 +121,12 @@ std::optional<std::string_view> VideoDriver_SDL_OpenGL::AllocateContext()
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-	if (_debug_driver_level >= 8) {
+	if (IsVisibleSeverity(Facility::Driver, Severity::Trace2)) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 	}
 
 	this->gl_context = SDL_GL_CreateContext(this->sdl_window);
-	if (this->gl_context == nullptr) return "SDL2: Can't activate GL context";
+	if (this->gl_context == nullptr) return "SDL3: Can't activate GL context";
 
 	ToggleVsync(_video_vsync);
 
@@ -159,6 +166,7 @@ void *VideoDriver_SDL_OpenGL::GetVideoPointer()
 {
 	if (BlitterFactory::GetCurrentBlitter()->NeedsAnimationBuffer()) {
 		this->anim_buffer = OpenGLBackend::Get()->GetAnimBuffer();
+		this->anim_pitch = _screen.pitch;
 	}
 	return OpenGLBackend::Get()->GetVideoBuffer();
 }
@@ -169,11 +177,12 @@ void VideoDriver_SDL_OpenGL::ReleaseVideoPointer()
 	OpenGLBackend::Get()->ReleaseVideoBuffer(this->dirty_rect);
 	this->dirty_rect = {};
 	this->anim_buffer = nullptr;
+	this->anim_pitch = 0;
 }
 
 void VideoDriver_SDL_OpenGL::Paint()
 {
-	PerformanceMeasurer framerate(PFE_VIDEO);
+	PerformanceMeasurer framerate(PerformanceElement::Video);
 
 	if (this->local_palette.count_dirty != 0) {
 		Blitter *blitter = BlitterFactory::GetCurrentBlitter();

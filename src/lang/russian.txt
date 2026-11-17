@@ -651,6 +651,7 @@ STR_AIRCRAFT_MENU_AIRPORT_CONSTRUCTION                          :Строите�
 STR_LANDSCAPING_MENU_LANDSCAPING                                :Ландшафт
 STR_LANDSCAPING_MENU_PLANT_TREES                                :Высадка деревьев
 STR_LANDSCAPING_MENU_PLACE_SIGN                                 :Поставить метку
+STR_LANDSCAPING_MENU_PLACE_OBJECT                               :Разместить объект
 
 # Music menu
 STR_TOOLBAR_SOUND_MUSIC                                         :Звук/музыка
@@ -663,6 +664,7 @@ STR_NEWS_MENU_DELETE_ALL_MESSAGES                               :Удалить 
 # About menu
 STR_ABOUT_MENU_LAND_BLOCK_INFO                                  :Информация об участке земли
 STR_ABOUT_MENU_HELP                                             :Помощь и документация
+STR_ABOUT_MENU_ENTER_SCREENSAVER_MODE                           :Режим сохранения экрана
 STR_ABOUT_MENU_TOGGLE_CONSOLE                                   :Консоль
 STR_ABOUT_MENU_AI_DEBUG                                         :Отладка ИИ / скриптов
 STR_ABOUT_MENU_SCREENSHOT                                       :Снимок экрана
@@ -768,7 +770,6 @@ STR_GRAPH_LAST_24_MONTHS                                        :{TINY_FONT}{BLA
 STR_GRAPH_LAST_24_QUARTERS                                      :{TINY_FONT}{BLACK}6 лет (поквартально)
 STR_GRAPH_LAST_24_YEARS                                         :{TINY_FONT}{BLACK}24 года
 
-STR_GRAPH_TOGGLE_RANGE                                          :Включить/отключить отображение графика
 STR_GRAPH_SELECT_SCALE                                          :Сменить горизонтальный масштаб графика
 
 STR_GRAPH_CARGO_PAYMENT_RATES_CAPTION                           :{WHITE}Оплата за перевозку грузов
@@ -784,14 +785,21 @@ STR_GRAPH_CARGO_PAYMENT_CARGO                                   :{TINY_FONT}{BLA
 
 STR_GRAPH_INDUSTRY_CAPTION                                      :{WHITE}{INDUSTRY} - Продукция
 STR_GRAPH_INDUSTRY_RANGE_PRODUCED                               :Произведено
+STR_GRAPH_INDUSTRY_RANGE_PRODUCED_TOOLTIP                       :Переключить отображение графика грузов, произведённых на предприятии
 STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED                            :Перевезено
+STR_GRAPH_INDUSTRY_RANGE_TRANSPORTED_TOOLTIP                    :Переключить отображение графика перевезённых грузов, произведённых на предприятии
 STR_GRAPH_INDUSTRY_RANGE_DELIVERED                              :Доставлено
+STR_GRAPH_INDUSTRY_RANGE_DELIVERED_TOOLTIP                      :Переключить отображение графика грузов, доставленных на предприятие
 STR_GRAPH_INDUSTRY_RANGE_WAITING                                :В ожидании
+STR_GRAPH_INDUSTRY_RANGE_WAITING_TOOLTIP                        :Переключить отображение графика грузов, ожидающих погрузки
 
 STR_GRAPH_TOWN_CARGO_CAPTION                                    :{WHITE}{TOWN} - Пассажиры и грузы
 STR_GRAPH_TOWN_RANGE_PRODUCED                                   :Произведено
+STR_GRAPH_TOWN_RANGE_PRODUCED_TOOLTIP                           :Переключить отображение графика грузов, произведённых в городе
 STR_GRAPH_TOWN_RANGE_TRANSPORTED                                :Перевезено
+STR_GRAPH_TOWN_RANGE_TRANSPORTED_TOOLTIP                        :Переключить отображение графика перевезённых грузов, произведённых в городе
 STR_GRAPH_TOWN_RANGE_DELIVERED                                  :Доставлено
+STR_GRAPH_TOWN_RANGE_DELIVERED_TOOLTIP                          :Переключить отображение графика грузов, доставленных в город
 
 STR_GRAPH_PERFORMANCE_DETAIL_TOOLTIP                            :{BLACK}Показать составляющие части рейтинга
 
@@ -1227,7 +1235,7 @@ STR_GAME_OPTIONS_VIDEO_DRIVER_INFO                              :Видеодр�
 STR_GAME_OPTIONS_INTERFACE                                      :Интерфейс
 
 STR_GAME_OPTIONS_GUI_SCALE_FRAME                                :Масштаб интерфейса
-STR_GAME_OPTIONS_GUI_SCALE_TOOLTIP                              :Изменяйте масштаб интерфейса с помощью ползунка. Удерживайте Ctrl для плавной настройки.
+STR_GAME_OPTIONS_GUI_SCALE_TOOLTIP                              :Изменяйте масштаб интерфейса с помощью ползунка. Он ограничен размерами окна. Удерживайте Ctrl для плавной настройки.
 STR_GAME_OPTIONS_GUI_SCALE_AUTO                                 :Автоопределение
 STR_GAME_OPTIONS_GUI_SCALE_AUTO_TOOLTIP                         :Установить масштаб интерфейса автоматически
 
@@ -1359,9 +1367,9 @@ STR_RIVERS_MODERATE                                             :Среднее
 STR_RIVERS_LOT                                                  :Большое
 
 ###length 3
-STR_DISASTER_NONE                                               :нет
-STR_DISASTER_REDUCED                                            :сниженная
-STR_DISASTER_NORMAL                                             :обычная
+STR_BREAKDOWNS_NONE                                             :нет
+STR_BREAKDOWNS_REDUCED                                          :сниженная
+STR_BREAKDOWNS_NORMAL                                           :обычная
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1,5
@@ -1714,6 +1722,12 @@ STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE                         :Множите�
 STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE_HELPTEXT                :Умножить производительность предприятий на указанное значение.
 STR_CONFIG_SETTING_CARGO_SCALE_VALUE                            :{NUM}%
 
+STR_CONFIG_SETTING_CARGO_AGING_RATE                             :Множитель скорости снижения оплаты грузоперевозок: {STRING}
+STR_CONFIG_SETTING_CARGO_AGING_RATE_HELPTEXT                    :Настройка скорости снижения цены груза, находящегося в пути
+STR_CONFIG_SETTING_CARGO_AGING_RATE_VALUE                       :{NUM}%
+###setting-zero-is-special
+STR_CONFIG_SETTING_CARGO_AGING_RATE_ZERO                        :без снижения
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Автозамена изношенного транспорта: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :Включает автоматическую замену устаревших транспортных средств
 
@@ -1761,6 +1775,9 @@ STR_CONFIG_SETTING_TERRAIN_TYPE_HELPTEXT                        :Укажите 
 STR_CONFIG_SETTING_INDUSTRY_DENSITY                             :Количество предприятий: {STRING}
 STR_CONFIG_SETTING_INDUSTRY_DENSITY_HELPTEXT                    :Выберите, сколько предприятий создавать в начале и на каком уровне поддерживать их количество в процессе игры.
 
+STR_CONFIG_SETTING_SPAWN_PRIMARY_INDUSTRY_ONLY                  :Создавать только основные предприятия: {STRING}
+STR_CONFIG_SETTING_SPAWN_PRIMARY_INDUSTRY_ONLY_HELPTEXT         :При создании карты и в процессе игры только основные предприятия (добывающие и выращивающие) будут появляться автоматически. Обрабатывающие предприятия должны будут строить игроки.
+
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE                        :Макс. расстояние от края карты до предприятий нефтяной индустрии: {STRING}
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE_HELPTEXT               :Эта настройка ограничивает расстояние от края карты до нефтяных платформ и нефтеперерабатывающих заводов. Таким образом, на краях карты, оканчивающихся водой, они будут строиться у берега. На картах размером более 256 это значение будет соответственно увеличено.
 
@@ -1805,7 +1822,7 @@ STR_CONFIG_SETTING_TREE_PLACER_ORIGINAL                         :Оригина�
 STR_CONFIG_SETTING_TREE_PLACER_IMPROVED                         :Улучшенный
 
 STR_CONFIG_SETTING_ROAD_SIDE                                    :Движение автотранспорта: {STRING}
-STR_CONFIG_SETTING_ROAD_SIDE_HELPTEXT                           :Выберите сторону дороги, по которой движется автотранспорт
+STR_CONFIG_SETTING_ROAD_SIDE_HELPTEXT                           :Выберите сторону дороги, по которой движется автотранспорт.{}Это также может повлиять на расстановку светофоров.{}При изменении этой настройки игру, возможно, придётся перезапустить для полного и корректного применения для всех транспортных средств.
 
 ###length 2
 STR_CONFIG_SETTING_ROAD_SIDE_LEFT                               :Левостороннее
@@ -1949,12 +1966,12 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :Показыв�
 STR_CONFIG_SETTING_QUICKGOTO                                    :Быстрое создание заданий транспорта: {STRING}
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :Открывать окно маршрута с нажатой кнопкой «Следовать»
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Тип ж/д путей по умолчанию (после старта/загрузки): {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Тип железнодорожных путей, выбираемый по умолчанию после старта или загрузки игры.{}«Первые доступные» - самый старый тип рельсов.{}«Последние доступные» - самый новый тип.{}«Наиболее используемые» - тип рельсов, наиболее широко используемых в игре.
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE                       :Тип трамваев, ж/д и автодорог по умолчанию: {STRING}
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_HELPTEXT              :Тип автомобильных и железных дорог, а также трамваев, выбранных по умолчанию после начала или загрузки игры. «Первые доступные» - выбор самых первых типов; «Последние доступные» - выбор самых новых; «Самые используемые» - выбор типов, наиболее используемых в данный момент.
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :первые доступные
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :последние доступные
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :наиболее используемые
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_FIRST                 :Первые доступные
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_LAST                  :Последние доступные
+STR_CONFIG_SETTING_DEFAULT_RAIL_ROAD_TYPE_MOST_USED             :Самые используемые
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :Показывать зарезервированные пути: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :Подсвечивать зарезервированные пути для решения проблем на путях с маршрутными сигналами
@@ -2085,20 +2102,26 @@ STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Показыв�
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN                           :Открытие предприятий: {STRING}
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN_HELPTEXT                  :Показывать новости об открывающихся предприятиях
 
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE                          :Закрытие предприятий: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_HELPTEXT                 :Показывать новости о закрывающихся предприятиях
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_COMPANY                  :Закрытие предприятий, обслуживаемых компанией: {STRING}
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_COMPANY_HELPTEXT         :Показывать газетный заголовок, если предприятие, обслуживаемое вашей компанией, закрывается.
+
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_OTHER                    :Закрытие предприятий, обслуживаемых конкурентами: {STRING}
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_OTHER_HELPTEXT           :Показывать газетный заголовок, если предприятие, обслуживаемое конкурирующими компаниями, закрывается.
+
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_UNSERVED                 :Закрытие предприятий, никем не обслуживаемых: {STRING}
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_UNSERVED_HELPTEXT        :Показывать газетный заголовок, если закрывается предприятие, не обслуживаемое ни одной компанией.
 
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES                         :Изменения в экономике: {STRING}
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES_HELPTEXT                :Показывать новости о глобальных изменениях в экономике
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_COMPANY                :Изм. производительности предприятий, обслуж. компанией: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_COMPANY_HELPTEXT       :Показывать новости об изменении производительности предприятий, обслуживаемых компанией игрока
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_COMPANY_HELPTEXT       :Показывать новости об изменении производительности предприятий, обслуживаемых компанией игрока.
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_OTHER                  :Изм. производительности предприятий, обслуж. конкурентами: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_OTHER_HELPTEXT         :Показывать новости об изменении производительности предприятий, обслуживаемых конкурентами
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_OTHER_HELPTEXT         :Показывать новости об изменении производительности предприятий, обслуживаемых конкурентами.
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED               :Изм. производительности предпр., никем не обслуживаемых: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED_HELPTEXT      :Показывать новости об изменении производительности никем не обслуживаемых предприятий
+STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED_HELPTEXT      :Показывать новости об изменении производительности никем не обслуживаемых предприятий.
 
 STR_CONFIG_SETTING_NEWS_ADVICE                                  :Советы и сведения, касающиеся транспорта компании: {STRING}
 STR_CONFIG_SETTING_NEWS_ADVICE_HELPTEXT                         :Показывать сообщения о транспортных средствах, на которые следует обратить внимание
@@ -3052,22 +3075,22 @@ STR_PICKER_COLLECTION_DELETE_QUERY                              :Удалить 
 STR_PICKER_COLLECTION_DELETE_QUERY_TEXT                         :{YELLOW}Удалить эту коллекцию?
 STR_PICKER_COLLECTION_DELETE_QUERY_DISABLED_TEXT                :{YELLOW}Вы уверены, что хотите удалить эту коллекцию? В ней содержатся объекты из отключённых модулей NewGRF!
 
-STR_PICKER_STATION_CLASS_TOOLTIP                                :Выберите тип станций для отображения
+STR_PICKER_STATION_CLASS_TOOLTIP                                :Выберите тип станций для отображения. Ctrl+щелчок для добавления в сохранённые или удаления.
 STR_PICKER_STATION_TYPE_TOOLTIP                                 :Выберите станцию для строительства. Ctrl+щелчок добавит её в «избранное» или удалит.
 STR_PICKER_STATION_COLLECTION_TOOLTIP                           :Выберите коллекцию станций для отображения
-STR_PICKER_WAYPOINT_CLASS_TOOLTIP                               :Выберите тип маршрутных точек для отображения
+STR_PICKER_WAYPOINT_CLASS_TOOLTIP                               :Выберите тип маршрутных точек для отображения. Ctrl+щелчок для добавления в сохранённые или удаления.
 STR_PICKER_WAYPOINT_TYPE_TOOLTIP                                :Выберите маршрутную точку для строительства. Ctrl+щелчок добавит её в «избранное» или удалит.
 STR_PICKER_WAYPOINT_COLLECTION_TOOLTIP                          :Выберите коллекцию маршрутных точек для отображения
-STR_PICKER_ROADSTOP_BUS_CLASS_TOOLTIP                           :Выберите тип остановок для отображения
+STR_PICKER_ROADSTOP_BUS_CLASS_TOOLTIP                           :Выберите тип остановок для отображения. Ctrl+щелчок для добавления в сохранённые или удаления.
 STR_PICKER_ROADSTOP_BUS_TYPE_TOOLTIP                            :Выберите остановку для строительства. Ctrl+щелчок добавит её в «избранное» или удалит.
 STR_PICKER_ROADSTOP_BUS_COLLECTION_TOOLTIP                      :Выберите коллекцию автобусных остановок для отображения
-STR_PICKER_ROADSTOP_TRUCK_CLASS_TOOLTIP                         :Выберите тип грузовых терминалов для отображения
+STR_PICKER_ROADSTOP_TRUCK_CLASS_TOOLTIP                         :Выберите тип грузовых терминалов для отображения. Ctrl+щелчок для добавления в сохранённые или удаления.
 STR_PICKER_ROADSTOP_TRUCK_TYPE_TOOLTIP                          :Выберите грузовой терминал для строительства. Ctrl+щелчок добавит его в «избранное» или удалит.
 STR_PICKER_ROADSTOP_TRUCK_COLLECTION_TOOLTIP                    :Выберите коллекцию грузовых терминалов для отображения
-STR_PICKER_OBJECT_CLASS_TOOLTIP                                 :Выберите тип объектов для отображения
+STR_PICKER_OBJECT_CLASS_TOOLTIP                                 :Выберите тип объектов для отображения. Ctrl+щелчок для добавления в сохранённые или удаления.
 STR_PICKER_OBJECT_TYPE_TOOLTIP                                  :Выберите объект для строительства. Ctrl+щелчок добавит его в «избранное» или удалит. Ctrl+перетаскивание - выбор диагональной области. При нажатом Shift - оценка стоимости строительства.
 STR_PICKER_OBJECT_COLLECTION_TOOLTIP                            :Выберите коллекцию объектов для отображения
-STR_PICKER_HOUSE_CLASS_TOOLTIP                                  :Выберите городскую зону для отображения соответствующих строений
+STR_PICKER_HOUSE_CLASS_TOOLTIP                                  :Выберите городскую зону для отображения соответствующих строений. Ctrl+щелчок для добавления в сохранённые или удаления.
 STR_PICKER_HOUSE_TYPE_TOOLTIP                                   :Выберите здание для строительства. Ctrl+щелчок добавит его в «избранное» или удалит.
 STR_PICKER_HOUSE_COLLECTION_TOOLTIP                             :Выберите коллекцию домов для отображения
 
@@ -3114,7 +3137,7 @@ STR_BUILD_SIGNAL_ELECTRIC_EXIT_TOOLTIP                          :{BLACK}Выхо
 STR_BUILD_SIGNAL_ELECTRIC_COMBO_TOOLTIP                         :{BLACK}Комбинированный светофор{}Работает одновременно как входной и выходной светофор. Это позволяет построить большую разветвлённую сеть.
 STR_BUILD_SIGNAL_ELECTRIC_PBS_TOOLTIP                           :{BLACK}Маршрутный светофор{}Позволяет нескольким поездам находиться в одном сигнальном блоке, если каждый из них может зарезервировать безопасный путь. Допускает следование поездов в обе стороны.
 STR_BUILD_SIGNAL_ELECTRIC_PBS_OWAY_TOOLTIP                      :{BLACK}Односторонний маршрутный светофор{}Позволяет нескольким поездам находиться в одном сигнальном блоке, если каждый из них может зарезервировать безопасный путь. Не допускает следования поездов в обратную сторону.
-STR_BUILD_SIGNAL_CONVERT_TOOLTIP                                :{BLACK}Изменение типа сигнала{}Когда кнопка нажата, щелчок по существующему сигналу преобразует его в выбранный тип. Ctrl+щелчок - перебор существующих вариантов. Shift+щелчок - оценка стоимости преобразования.
+STR_BUILD_SIGNAL_CONVERT_TOOLTIP                                :{BLACK}Изменение типа сигнала.{}Щелчок по существующему сигналу преобразует его в выбранный тип. Ctrl+щелчок - перебор существующих вариантов. При нажатом Shift - оценка стоимости преобразования.
 STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP                   :{BLACK}Расстояние между сигналами при протягивании
 STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP          :{BLACK}Уменьшить расстояние между сигналами при протягивании
 STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP          :{BLACK}Увеличить расстояние между сигналами при протягивании
@@ -3262,10 +3285,13 @@ STR_TREES_MODE_FOREST_LG_TOOLTIP                                :{BLACK}Созд
 
 # Land generation window (SE)
 STR_TERRAFORM_TOOLBAR_LAND_GENERATION_CAPTION                   :{WHITE}Генератор карты
-STR_TERRAFORM_TOOLTIP_PLACE_ROCKY_AREAS_ON_LANDSCAPE            :{BLACK}Разместить скалы на карте
+STR_TERRAFORM_TOOLTIP_PLACE_ROCKY_AREAS_ON_LANDSCAPE            :{BLACK}Разместить скалы на карте.{}Ctrl+щелчок убирает скалы.
+STR_TERRAFORM_TOOLTIP_PLACE_ROUGH_AREAS_ON_LANDSCAPE            :{BLACK}Разместить неровности на карте.{}Ctrl+щелчок - убрать неровности.
 STR_TERRAFORM_TOOLTIP_DEFINE_DESERT_AREA                        :{BLACK}Указать область, занимаемую пустыней.{}Ctrl+щелчок убирает песок.
 STR_TERRAFORM_TOOLTIP_INCREASE_SIZE_OF_LAND_AREA                :{BLACK}Увеличить площадь изменения рельефа
 STR_TERRAFORM_TOOLTIP_DECREASE_SIZE_OF_LAND_AREA                :{BLACK}Уменьшить площадь изменения рельефа
+STR_TERRAFORM_TOOLTIP_LOWER_A_CORNER_OF_LAND                    :{BLACK}Опустить уровень поверхности земли. Если площадь области изменения рельефа 1x1, то щелчок+перетаскивание опускает выбранный угол и прямоугольную область на новую высоту. При нажатом Ctrl - выбор диагональной области. При нажатом Shift - оценка стоимости работ.
+STR_TERRAFORM_TOOLTIP_RAISE_A_CORNER_OF_LAND                    :{BLACK}Поднять уровень поверхности земли. Если площадь области изменения рельефа 1x1, то щелчок+перетаскивание поднимает выбранный угол и прямоугольную область на новую высоту. При нажатом Ctrl - выбор диагональной области. При нажатом Shift - оценка стоимости работ.
 STR_TERRAFORM_TOOLTIP_GENERATE_RANDOM_LAND                      :{BLACK}Создать случайную карту
 STR_TERRAFORM_SE_NEW_WORLD                                      :{BLACK}Создать новый сценарий
 STR_TERRAFORM_RESET_LANDSCAPE                                   :{BLACK}Сбросить карту
@@ -3333,21 +3359,20 @@ STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_CAPTION                 :{WHITE}Убра
 STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_QUERY                   :{YELLOW}Убрать все предприятия с карты?
 
 # Industry cargoes window
-STR_INDUSTRY_CARGOES_INDUSTRY_CAPTION                           :{WHITE}Производственная цепочка - {STRING}
-STR_INDUSTRY_CARGOES_CARGO_CAPTION                              :{WHITE}Цепочка грузоперевозок - {STRING}
-STR_INDUSTRY_CARGOES_PRODUCERS                                  :{WHITE}Производители
-STR_INDUSTRY_CARGOES_CUSTOMERS                                  :{WHITE}Потребители
-STR_INDUSTRY_CARGOES_HOUSES                                     :{WHITE}Городские здания
-STR_INDUSTRY_CARGOES_INDUSTRY_TOOLTIP                           :{BLACK}Щелчок по предприятию покажет его поставщиков и потребителей
-STR_INDUSTRY_CARGOES_CARGO_TOOLTIP                              :{BLACK}{STRING}{}Щелчок по типу груза покажет его производителей и потребителей
-STR_INDUSTRY_DISPLAY_CHAIN                                      :{BLACK}Показать связи
-STR_INDUSTRY_DISPLAY_CHAIN_TOOLTIP                              :{BLACK}Показать производителей сырья и потребителей продукции этого предприятия
-STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP                            :{BLACK}Показать на карте
-STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP_TOOLTIP                    :{BLACK}Показать на карте выбранные предприятия
-STR_INDUSTRY_CARGOES_SELECT_CARGO                               :{BLACK}Выберите груз
-STR_INDUSTRY_CARGOES_SELECT_CARGO_TOOLTIP                       :{BLACK}Выберите груз для отображения
-STR_INDUSTRY_CARGOES_SELECT_INDUSTRY                            :{BLACK}Выберите предприятие
-STR_INDUSTRY_CARGOES_SELECT_INDUSTRY_TOOLTIP                    :{BLACK}Выберите предприятие для отображения
+STR_INDUSTRY_CARGOES_INDUSTRY_CAPTION                           :Производственная цепочка - {STRING}
+STR_INDUSTRY_CARGOES_CARGO_CAPTION                              :Цепочка грузоперевозок - {STRING}
+STR_INDUSTRY_CARGOES_SOURCES                                    :Пункты отправки
+STR_INDUSTRY_CARGOES_DESTINATIONS                               :Пункты назначения
+STR_INDUSTRY_CARGOES_HOUSES                                     :Городские здания
+STR_INDUSTRY_CARGOES_ACCEPTS_PRODUCES_TOOLTIP                   :{STRING}{}Принимает: {CARGO_LIST}{}Производит: {CARGO_LIST}
+STR_INDUSTRY_DISPLAY_CHAIN                                      :Показать связи
+STR_INDUSTRY_DISPLAY_CHAIN_TOOLTIP                              :Показать производителей сырья и потребителей продукции этого предприятия
+STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP                            :Показать на карте
+STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP_TOOLTIP                    :Показать на карте выбранные предприятия
+STR_INDUSTRY_CARGOES_SELECT_CARGO                               :Выберите груз
+STR_INDUSTRY_CARGOES_SELECT_CARGO_TOOLTIP                       :Выберите груз для отображения
+STR_INDUSTRY_CARGOES_SELECT_INDUSTRY                            :Выберите предприятие
+STR_INDUSTRY_CARGOES_SELECT_INDUSTRY_TOOLTIP                    :Выберите предприятие для отображения
 
 # Land area window
 STR_LAND_AREA_INFORMATION_CAPTION                               :{WHITE}Информация о территории
@@ -3446,6 +3471,8 @@ STR_LAI_WATER_DESCRIPTION_LOCK                                  :Шлюз
 STR_LAI_WATER_DESCRIPTION_RIVER                                 :Река
 STR_LAI_WATER_DESCRIPTION_COAST_OR_RIVERBANK                    :Морской или речной берег
 STR_LAI_WATER_DESCRIPTION_SHIP_DEPOT                            :Верфь
+STR_LAI_WATER_DESCRIPTION_WATER_ROCKS                           :Камни
+STR_LAI_WATER_DESCRIPTION_COAST_ROCKS                           :Каменистый берег
 
 # Industries come directly from their industry names
 
@@ -3559,6 +3586,9 @@ STR_SAVELOAD_LOAD_BUTTON                                        :{BLACK}Загр
 STR_SAVELOAD_LOAD_TOOLTIP                                       :{BLACK}Загрузить выбранную игру
 STR_SAVELOAD_LOAD_HEIGHTMAP_TOOLTIP                             :{BLACK}Загрузить выбранную карту высот
 STR_SAVELOAD_LOAD_TOWN_DATA_TOOLTIP                             :{BLACK}Загрузка выбранного файла для создания городов
+STR_SAVELOAD_NEW_DIRECTORY_BUTTON                               :{BLACK}Новый каталог
+STR_SAVELOAD_NEW_DIRECTORY_TOOLTIP                              :{BLACK}Создать новый каталог в указанном месте
+STR_SAVELOAD_NEW_DIRECTORY_QUERY_CAPTION                        :{WHITE}Укажите имя нового каталога
 STR_SAVELOAD_DETAIL_CAPTION                                     :{BLACK}Информация об игре
 STR_SAVELOAD_DETAIL_NOT_AVAILABLE                               :{BLACK}Нет информации.
 STR_SAVELOAD_DETAIL_COMPANY_INDEX                               :{SILVER}{COMMA}: {WHITE}{STRING}
@@ -4002,6 +4032,7 @@ STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Щёлкните по задаче, чтобы показать предприятие/город/место. Ctrl+щелчок показывает в новом окне.
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :{BLACK}Вопрос
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :{BLACK}Информация
 STR_GOAL_QUESTION_CAPTION_WARNING                               :{BLACK}Предупреждение
@@ -4511,10 +4542,10 @@ STR_DEPOT_VEHICLE_TOOLTIP_CHAIN                                 :{BLACK}{NUM} е
 STR_DEPOT_VEHICLE_TOOLTIP_CARGO                                 :{}{CARGO_LONG} ({CARGO_SHORT})
 
 ###length VEHICLE_TYPES
-STR_DEPOT_TRAIN_LIST_TOOLTIP                                    :{BLACK}Поезда в депо. Формируйте составы с помощью перетаскивания локомотивов и вагонов. Нажмите ПКМ для получения информации. При нажатом Ctrl обе функции работают от выбранного вагона до конца состава.
-STR_DEPOT_ROAD_VEHICLE_LIST_TOOLTIP                             :{BLACK}Автомобили в гараже. Нажмите ПКМ для получения информации.
-STR_DEPOT_SHIP_LIST_TOOLTIP                                     :{BLACK}Суда в доке. Нажмите ПКМ для получения информации.
-STR_DEPOT_AIRCRAFT_LIST_TOOLTIP                                 :{BLACK}Воздушный транспорт в ангаре. Нажмите ПКМ для получения информации.
+STR_DEPOT_TRAIN_LIST_TOOLTIP                                    :{BLACK}Поезда в депо. Формируйте составы с помощью перетаскивания локомотивов и вагонов. Нажмите правую кнопку мыши для получения информации. При нажатом Ctrl обе функции работают от выбранного вагона до конца состава. Зажмите Ctrl+Shift для отображения типов грузов.
+STR_DEPOT_ROAD_VEHICLE_LIST_TOOLTIP                             :{BLACK}Автомобили в гараже. Нажмите правую кнопку мыши для получения информации. Зажмите Ctrl+Shift для отображения типов грузов.
+STR_DEPOT_SHIP_LIST_TOOLTIP                                     :{BLACK}Суда в доке. Нажмите правую кнопку мыши для получения информации. Зажмите Ctrl+Shift для отображения типов грузов.
+STR_DEPOT_AIRCRAFT_LIST_TOOLTIP                                 :{BLACK}Воздушный транспорт в ангаре. Нажмите правую кнопку мыши для получения информации. Зажмите Ctrl+Shift для отображения типов грузов.
 
 ###length VEHICLE_TYPES
 STR_DEPOT_TRAIN_SELL_TOOLTIP                                    :{BLACK}Перетащите сюда транспортное средство, чтобы продать его
@@ -4788,9 +4819,7 @@ STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD_MIN_PERFORMANCE :{BLACK}Приб
 STR_VEHICLE_INFO_RELIABILITY_BREAKDOWNS                         :{BLACK}Надёжность: {LTBLUE}{COMMA}% (макс. {COMMA}%) {BLACK}Поломок после ТО: {LTBLUE}{COMMA}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}Построен в {LTBLUE}{NUM} г.{BLACK} Стоимость: {LTBLUE}{CURRENCY_LONG}
-STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Ёмкость: {LTBLUE}отсутствует{STRING}
 STR_VEHICLE_INFO_CAPACITY                                       :{BLACK}Ёмкость: {LTBLUE}{CARGO_LONG}{STRING}
-STR_VEHICLE_INFO_CAPACITY_MULT                                  :{BLACK}Ёмкость: {LTBLUE}{CARGO_LONG}{STRING} (×{NUM})
 STR_VEHICLE_INFO_CAPACITY_CAPACITY                              :{BLACK}Ёмкость: {LTBLUE}{CARGO_LONG}, {CARGO_LONG}{STRING}
 
 STR_VEHICLE_INFO_FEEDER_CARGO_VALUE                             :{BLACK}Выручка перевозки: {LTBLUE}{CURRENCY_LONG}
@@ -4823,22 +4852,23 @@ STR_QUERY_RENAME_AIRCRAFT_CAPTION                               :{WHITE}Назв
 STR_VEHICLE_DETAILS_TRAIN_ENGINE_BUILT_AND_VALUE                :{LTBLUE}{ENGINE}{BLACK} Построен в {LTBLUE}{NUM} г. {BLACK}Стоимость: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_DETAILS_TRAIN_WAGON_VALUE                           :{LTBLUE}{ENGINE}{BLACK} Стоимость: {LTBLUE}{CURRENCY_LONG}
 
+STR_VEHICLE_DETAILS_TRAIN_LENGTH                                :{BLACK}Длина состава: {LTBLUE}{DECIMAL} пол{P е я ей}
+
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_TEXT                   :{BLACK}Общая загруженность состава:
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY                        :{LTBLUE}{CARGO_LONG} (Всего: {CARGO_SHORT})
-STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_MULT                   :{LTBLUE}{CARGO_LONG} ({CARGO_SHORT}) (×{NUM})
+
+STR_VEHICLE_DETAILS_TRAIN_CARGO_EMPTY                           :{LTBLUE}Пустой ({CARGO_LONG}){STRING}
+STR_VEHICLE_DETAILS_TRAIN_CARGO_FROM                            :{LTBLUE}{CARGO_LONG} ({CARGO_SHORT}) из {STATION}{STRING}
 
 STR_VEHICLE_DETAILS_CARGO_EMPTY                                 :{LTBLUE}Пусто
 STR_VEHICLE_DETAILS_CARGO_FROM                                  :{LTBLUE}{CARGO_LONG} из {STATION}
-STR_VEHICLE_DETAILS_CARGO_FROM_MULT                             :{LTBLUE}{CARGO_LONG} из {STATION} (×{NUM})
 
 STR_VEHICLE_DETAIL_TAB_CARGO                                    :{BLACK}Груз
 STR_VEHICLE_DETAILS_TRAIN_CARGO_TOOLTIP                         :{BLACK}Показать сведения о перевозимых грузах
 STR_VEHICLE_DETAIL_TAB_INFORMATION                              :{BLACK}Информация
 STR_VEHICLE_DETAILS_TRAIN_INFORMATION_TOOLTIP                   :{BLACK}Показать сведения о вагонах
-STR_VEHICLE_DETAIL_TAB_CAPACITIES                               :{BLACK}Вместимость
-STR_VEHICLE_DETAILS_TRAIN_CAPACITIES_TOOLTIP                    :{BLACK}Показать вместимость вагонов
-STR_VEHICLE_DETAIL_TAB_TOTAL_CARGO                              :{BLACK}Общий груз
-STR_VEHICLE_DETAILS_TRAIN_TOTAL_CARGO_TOOLTIP                   :{BLACK}Показать общую вместимость поезда по типам грузов
+STR_VEHICLE_DETAIL_TAB_TOTALS                                   :{BLACK}Всего
+STR_VEHICLE_DETAILS_TRAIN_TOTALS_TOOLTIP                        :{BLACK}Показать груз, вместимость и длину состава
 
 STR_VEHICLE_DETAILS_TRAIN_ARTICULATED_RV_CAPACITY               :{BLACK}Ёмкость: {LTBLUE}{STRING}
 
@@ -4897,7 +4927,7 @@ STR_ORDER_TOOLTIP_FULL_LOAD                                     :{BLACK}Изме
 
 STR_ORDER_TOGGLE_UNLOAD                                         :{BLACK}Выгрузить всё
 STR_ORDER_DROP_UNLOAD_IF_ACCEPTED                               :Разгрузиться, если груз принимается
-STR_ORDER_DROP_UNLOAD                                           :Выгрузить всё
+STR_ORDER_DROP_UNLOAD                                           :Принудительно выгрузить всё
 STR_ORDER_DROP_TRANSFER                                         :Передать
 STR_ORDER_DROP_NO_UNLOADING                                     :Не разгружаться
 STR_ORDER_TOOLTIP_UNLOAD                                        :{BLACK}Изменить способ разгрузки на указанной станции
@@ -4934,7 +4964,7 @@ STR_ORDER_CONDITIONAL_REQUIRES_SERVICE                          :Требует�
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :Всегда
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :Оставшийся срок службы (лет)
 STR_ORDER_CONDITIONAL_MAX_RELIABILITY                           :Максимальная надёжность
-STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :Движется назад
+STR_ORDER_CONDITIONAL_DRIVING_BACKWARDS                         :Медленно движется назад
 ###next-name-looks-similar
 
 STR_ORDER_CONDITIONAL_COMPARATOR_TOOLTIP                        :{BLACK}Условие перехода
@@ -5237,6 +5267,11 @@ STR_ERROR_AUTOSAVE_FAILED                                       :Автомат�
 STR_ERROR_UNABLE_TO_READ_DRIVE                                  :{BLACK}Не удалось прочитать диск
 STR_ERROR_GAME_SAVE_FAILED                                      :Невозможно сохранить игру...
 STR_ERROR_UNABLE_TO_DELETE_FILE                                 :Невозможно удалить файл
+STR_ERROR_CANNOT_CREATE_DIRECTORY                               :Каталог не может быть создан...
+STR_ERROR_DIRECTORY_NAME_IN_USE                                 :Каталог или файл с таким именем уже существует.
+STR_ERROR_DIRECTORY_ILLEGAL_NAME                                :Имя каталога не должно содержать специальные символы.
+STR_ERROR_DIRECTORY_LEADING_DOT                                 :Имя каталога не должно начинаться с точки.
+STR_ERROR_DIRECTORY_PERMISSION_DENIED                           :У вас нет разрешений для создания этого каталога.
 STR_ERROR_GAME_LOAD_FAILED                                      :Невозможно загрузить игру...
 STR_GAME_SAVELOAD_ERROR_BROKEN_INTERNAL_ERROR                   :Внутренняя ошибка: {STRING}
 STR_GAME_SAVELOAD_ERROR_BROKEN_SAVEGAME                         :Файл повреждён - {STRING}
@@ -5539,6 +5574,10 @@ STR_ERROR_BRIDGE_TOO_LOW_FOR_BUOY                               :высота м
 STR_ERROR_BRIDGE_TOO_LOW_FOR_RAIL_WAYPOINT                      :высота моста - {HEIGHT}, этого недостаточно для маршрутной точки
 STR_ERROR_BRIDGE_TOO_LOW_FOR_ROAD_WAYPOINT                      :высота моста - {HEIGHT}, этого недостаточно для маршрутной точки
 STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK                               :высота моста - {HEIGHT}, этого недостаточно для шлюза
+STR_ERROR_BRIDGE_TOO_LOW_FOR_TRAIN_DEPOT                        :депо не поместится под мостом с высотой {HEIGHT}
+STR_ERROR_BRIDGE_TOO_LOW_FOR_ROADVEH_DEPOT                      :гараж не поместится под мостом с высотой {HEIGHT}
+STR_ERROR_BRIDGE_TOO_LOW_FOR_SHIP_DEPOT                         :док не поместится под мостом с высотой {HEIGHT}
+STR_ERROR_BRIDGE_TOO_LOW_FOR_OBJECT                             :объект не поместится под мостом с высотой {HEIGHT}
 
 # Tunnel related errors
 STR_ERROR_CAN_T_BUILD_TUNNEL_HERE                               :Здесь невозможно построить туннель...

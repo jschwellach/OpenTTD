@@ -866,6 +866,8 @@ STR_CONFIG_SETTING_WARN_LOST_VEHICLE                            : वाहन �
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 
 ###length 2
 
@@ -878,6 +880,7 @@ STR_CONFIG_SETTING_WARN_LOST_VEHICLE                            : वाहन �
 
 
 ###length 2
+
 
 
 
@@ -971,6 +974,8 @@ STR_CONFIG_SETTING_COMMAND_PAUSE_LEVEL_ALL_ACTIONS              :सर्व �
 ###length 3
 
 ###setting-zero-is-special
+
+
 
 
 
@@ -1416,6 +1421,7 @@ STR_LOCAL_AUTHORITY_COMPANY_RATING                              :{YELLOW}{COMPAN
 STR_GOALS_TEXT                                                  :{ORANGE}{STRING}
 
 # Goal question window
+###length 4
 
 # Goal Question button list
 ###length 18
@@ -1667,6 +1673,8 @@ STR_VEHICLE_VIEW_CAPTION                                        :{WHITE}{VEHICLE
 ###length VEHICLE_TYPES
 
 # Extra buttons for train details windows
+
+
 
 
 

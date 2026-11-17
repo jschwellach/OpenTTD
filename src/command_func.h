@@ -46,7 +46,7 @@ constexpr CommandFlags GetCommandFlags()
  * @param cmd_flags Flags from GetCommandFlags
  * @return flags for DoCommand
  */
-static constexpr inline DoCommandFlags CommandFlagsToDCFlags(CommandFlags cmd_flags)
+static constexpr DoCommandFlags CommandFlagsToDCFlags(CommandFlags cmd_flags)
 {
 	DoCommandFlags flags = {};
 	if (cmd_flags.Test(CommandFlag::NoWater)) flags.Set(DoCommandFlag::NoWater);
@@ -101,6 +101,35 @@ protected:
 };
 
 /**
+ * Extract the \c CommandCost from a command proc result.
+ * @tparam Tret Return type of the command.
+ * @param ret The return value of the command.
+ * @return The command cost.
+ */
+template <typename Tret>
+inline CommandCost &ExtractCommandCost(Tret &ret)
+{
+	if constexpr (std::is_same_v<Tret, CommandCost>) {
+		return ret;
+	} else {
+		static_assert(std::is_same_v<std::tuple_element_t<0, Tret>, CommandCost>);
+		return std::get<0>(ret);
+	}
+}
+
+/** @copydoc ExtractCommandCost(Tret &) */
+template <typename Tret>
+inline CommandCost ExtractCommandCost(Tret &&ret)
+{
+	if constexpr (std::is_same_v<Tret, CommandCost>) {
+		return ret;
+	} else {
+		static_assert(std::is_same_v<std::tuple_element_t<0, Tret>, CommandCost>);
+		return std::get<0>(ret);
+	}
+}
+
+/**
  * Templated wrapper that exposes the command parameter arguments
  * for the various Commands::Do/Post calls.
  * @tparam Tcmd The command-id to execute.
@@ -110,20 +139,6 @@ protected:
 template <Commands Tcmd, typename Tret, typename... Targs>
 struct CommandHelper<Tcmd, Tret(*)(DoCommandFlags, Targs...), true> : protected CommandHelperBase {
 private:
-	/**
-	 * Extract the \c CommandCost from a command proc result.
-	 * @param ret The return value of the command.
-	 * @return The command cost.
-	 */
-	static inline CommandCost &ExtractCommandCost(Tret &ret)
-	{
-		if constexpr (std::is_same_v<Tret, CommandCost>) {
-			return ret;
-		} else {
-			return std::get<0>(ret);
-		}
-	}
-
 	/**
 	 * Make a command proc result from a \c CommandCost.
 	 * @param cost The cost of the command.
@@ -192,14 +207,14 @@ public:
 	 * @return \c true iff the command succeeded.
 	 */
 	template <typename Tcallback>
-	static inline bool Post(Tcallback *callback, Targs... args) { return Post((StringID)0, callback, std::forward<Targs>(args)...); }
+	static inline bool Post(Tcallback *callback, Targs... args) { return Post(StringID{}, callback, std::forward<Targs>(args)...); }
 
 	/**
 	 * Shortcut for the long Post when not using a callback or an error message.
 	 * @param args Parameters for the command
 	 * @return \c true iff the command succeeded.
 	 */
-	static inline bool Post(Targs... args) { return Post<CommandCallback>((StringID)0, nullptr, std::forward<Targs>(args)...); }
+	static inline bool Post(Targs... args) { return Post<CommandCallback>(StringID{}, nullptr, std::forward<Targs>(args)...); }
 
 	/**
 	 * Top-level network safe command execution for the current company.
@@ -270,7 +285,7 @@ protected:
 	static inline void SetClientIdHelper([[maybe_unused]] T &data)
 	{
 		if constexpr (std::is_same_v<ClientID, T>) {
-			if (data == INVALID_CLIENT_ID) data = CLIENT_ID_SERVER;
+			if (data == ClientID::Invalid) data = ClientID::Server;
 		}
 	}
 
@@ -357,7 +372,7 @@ protected:
 	static inline bool ClientIdIsSet([[maybe_unused]] T &data)
 	{
 		if constexpr (std::is_same_v<ClientID, T>) {
-			return data != INVALID_CLIENT_ID;
+			return data != ClientID::Invalid;
 		} else {
 			return true;
 		}
@@ -443,7 +458,7 @@ protected:
 		if constexpr (std::is_same_v<Tret, CommandCost>) {
 			return InternalExecuteProcessResult(Tcmd, cmd_flags, res, res2, additional_money, tile, cur_company);
 		} else {
-			std::get<0>(res2) = InternalExecuteProcessResult(Tcmd, cmd_flags, ExtractCommandCost(res), ExtractCommandCost(res2), additional_money, tile, cur_company);
+			ExtractCommandCost(res2) = InternalExecuteProcessResult(Tcmd, cmd_flags, ExtractCommandCost(res), ExtractCommandCost(res2), additional_money, tile, cur_company);
 			return res2;
 		}
 	}
@@ -484,7 +499,7 @@ struct CommandHelper<Tcmd, Tret(*)(DoCommandFlags, Targs...), false> : CommandHe
 	 * @return \c true iff the command succeeded.
 	 */
 	template <typename Tcallback>
-	static inline bool Post(Tcallback *callback, TileIndex location, Targs... args) { return Post((StringID)0, callback, location, std::forward<Targs>(args)...); }
+	static inline bool Post(Tcallback *callback, TileIndex location, Targs... args) { return Post(StringID{}, callback, location, std::forward<Targs>(args)...); }
 
 	/**
 	 * Shortcut for Post when not using a callback or an error message.
@@ -492,7 +507,7 @@ struct CommandHelper<Tcmd, Tret(*)(DoCommandFlags, Targs...), false> : CommandHe
 	 * @param args Parameters for the command*
 	 * @return \c true iff the command succeeded.
 	 */
-	static inline bool Post(TileIndex location, Targs... args) { return Post<CommandCallback>((StringID)0, nullptr, location, std::forward<Targs>(args)...); }
+	static inline bool Post(TileIndex location, Targs... args) { return Post<CommandCallback>(StringID{}, nullptr, location, std::forward<Targs>(args)...); }
 
 	/**
 	 * Post variant that takes a TileIndex (for error window location and text effects) for

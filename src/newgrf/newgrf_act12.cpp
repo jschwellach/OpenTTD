@@ -32,15 +32,15 @@ static void LoadFontGlyph(ByteReader &buf)
 	uint8_t num_def = buf.ReadByte();
 
 	for (uint i = 0; i < num_def; i++) {
-		FontSize size    = (FontSize)buf.ReadByte();
+		FontSize size{buf.ReadByte()};
 		uint8_t  num_char  = buf.ReadByte();
 		uint16_t base_char = buf.ReadWord();
 
 		if (size >= FontSize::End) {
-			GrfMsg(1, "LoadFontGlyph: Size {} is not supported, ignoring", size);
+			GrfMsg(Severity::Error, "LoadFontGlyph: Size {} is not supported, ignoring", size);
 		}
 
-		GrfMsg(7, "LoadFontGlyph: Loading {} glyph(s) at 0x{:04X} for size {}", num_char, base_char, size);
+		GrfMsg(Severity::Trace1, "LoadFontGlyph: Loading {} glyph(s) at 0x{:04X} for size {}", num_char, base_char, size);
 
 		for (uint c = 0; c < num_char; c++) {
 			if (size < FontSize::End) SetUnicodeGlyph(size, base_char + c, _cur_gps.spriteid);
@@ -76,7 +76,7 @@ static void SkipAct12(ByteReader &buf)
 		buf.ReadWord();
 	}
 
-	GrfMsg(3, "SkipAct12: Skipping {} sprites", _cur_gps.skip_sprites);
+	GrfMsg(Severity::Notice, "SkipAct12: Skipping {} sprites", _cur_gps.skip_sprites);
 }
 
 /** @copydoc GrfActionHandler::FileScan */

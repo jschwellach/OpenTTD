@@ -13,13 +13,13 @@
 #include "../company_base.h"
 #include "../company_gui.h"
 #include "../timer/timer_game_tick.h"
-#include "../timer/timer_game_calendar.h"
 #include "../viewport_func.h"
 #include "../zoom_func.h"
 #include "../smallmap_gui.h"
 #include "../core/geometry_func.hpp"
 #include "../widgets/link_graph_legend_widget.h"
 #include "../strings_func.h"
+#include "linkgraph_base.h"
 #include "linkgraph_gui.h"
 
 #include "table/strings.h"
@@ -78,7 +78,7 @@ void LinkGraphOverlay::RebuildCache()
 	this->GetWidgetDpi(&dpi);
 
 	for (const Station *sta : Station::Iterate()) {
-		if (sta->rect.IsEmpty()) continue;
+		if (sta->spread.IsEmpty()) continue;
 
 		Point pta = this->GetStationMiddle(sta);
 
@@ -104,7 +104,7 @@ void LinkGraphOverlay::RebuildCache()
 
 				/* Show links between stations of selected companies or "neutral" ones like oilrigs. */
 				if (stb->owner != OWNER_NONE && sta->owner != OWNER_NONE && !this->company_mask.Test(stb->owner)) continue;
-				if (stb->rect.IsEmpty()) continue;
+				if (stb->spread.IsEmpty()) continue;
 
 				if (!this->IsLinkVisible(pta, this->GetStationMiddle(stb), &dpi)) continue;
 
@@ -305,7 +305,7 @@ void LinkGraphOverlay::DrawContent(Point pta, Point ptb, const LinkProperties &c
 
 	/* Move line a bit 90° against its dominant direction to prevent it from
 	 * being hidden below the grey line. */
-	int side = _settings_game.vehicle.road_side ? 1 : -1;
+	int side = _settings_game.vehicle.road_side == RoadVehicleDrivingSide::Right ? 1 : -1;
 	if (abs(pta.x - ptb.x) < abs(pta.y - ptb.y)) {
 		int offset_x = (pta.y > ptb.y ? 1 : -1) * side * width;
 		GfxDrawLine(pta.x + offset_x, pta.y, ptb.x + offset_x, ptb.y, colour, width, dash);
@@ -535,7 +535,7 @@ static_assert(WID_LGL_SATURATION_LAST - WID_LGL_SATURATION_FIRST ==
 /** Window definition for the linkgraph toolbar. */
 static WindowDesc _linkgraph_legend_desc(
 	WindowPosition::Automatic, "toolbar_linkgraph", 0, 0,
-	WC_LINKGRAPH_LEGEND, WC_NONE,
+	WindowClass::LinkGraphLegend, WindowClass::None,
 	{},
 	_nested_linkgraph_legend_widgets
 );
@@ -622,13 +622,13 @@ void LinkGraphLegendWindow::DrawWidget(const Rect &r, WidgetID widget) const
 			str = STR_LINKGRAPH_LEGEND_SATURATED;
 		}
 		if (str != STR_NULL) {
-			DrawString(br.left, br.right, CentreBounds(br.top, br.bottom, GetCharacterHeight(FontSize::Small)), str, GetContrastColour(colour) | TC_FORCED, SA_HOR_CENTER, false, FontSize::Small);
+			DrawString(br.left, br.right, CentreBounds(br.top, br.bottom, GetCharacterHeight(FontSize::Small)), str, ExtendedTextColour{GetContrastColour(colour), ExtendedTextColourFlag::Forced}, AlignmentH::Centre, false, FontSize::Small);
 		}
 	}
 	if (IsInsideMM(widget, WID_LGL_CARGO_FIRST, WID_LGL_CARGO_LAST + 1)) {
 		const CargoSpec *cargo = _sorted_cargo_specs[widget - WID_LGL_CARGO_FIRST];
 		GfxFillRect(br, cargo->legend_colour);
-		DrawString(br.left, br.right, CentreBounds(br.top, br.bottom, GetCharacterHeight(FontSize::Small)), cargo->abbrev, GetContrastColour(cargo->legend_colour, 73), SA_HOR_CENTER, false, FontSize::Small);
+		DrawString(br.left, br.right, CentreBounds(br.top, br.bottom, GetCharacterHeight(FontSize::Small)), cargo->abbrev, GetContrastColour(cargo->legend_colour, 73), AlignmentH::Centre, false, FontSize::Small);
 	}
 }
 

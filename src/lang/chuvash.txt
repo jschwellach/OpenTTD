@@ -526,7 +526,7 @@ STR_SEA_LEVEL_CUSTOM_PERCENTAGE                                 :Харпӑр х
 ###length 4
 
 ###length 3
-STR_DISASTER_NONE                                               :Ҫук
+STR_BREAKDOWNS_NONE                                             :Ҫук
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1.5
@@ -657,6 +657,8 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_AIRPORTS                        :Аэропор�
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 
 ###length 2
 
@@ -671,6 +673,7 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_AIRPORTS                        :Аэропор�
 ###length 2
 STR_CONFIG_SETTING_LAND_GENERATOR_ORIGINAL                      :Чӑн
 STR_CONFIG_SETTING_LAND_GENERATOR_TERRA_GENESIS                 :TerraGenesis
+
 
 
 
@@ -771,6 +774,8 @@ STR_CONFIG_SETTING_DATE_FORMAT_IN_SAVE_NAMES_ISO                :ISO (2008-12-31
 ###length 3
 
 ###setting-zero-is-special
+
+
 
 
 
@@ -1314,6 +1319,7 @@ STR_LOCAL_AUTHORITY_COMPANY_RATING                              :{YELLOW}{COMPAN
 STR_GOALS_TEXT                                                  :{ORANGE}{STRING}
 
 # Goal question window
+###length 4
 
 # Goal Question button list
 ###length 18
@@ -1517,7 +1523,6 @@ STR_VEHICLE_VIEW_CAPTION                                        :{WHITE}{VEHICLE
 
 
 
-STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Савӑт: {LTBLUE}Ҫук пул{STRING}
 
 
 
@@ -1525,6 +1530,8 @@ STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Савӑ
 ###length VEHICLE_TYPES
 
 # Extra buttons for train details windows
+
+
 
 
 

@@ -38,6 +38,7 @@
 #include "../settings_cmd.h"
 #include "../signs_cmd.h"
 #include "../station_cmd.h"
+#include "../string_func.h"
 #include "../story_cmd.h"
 #include "../subsidy_cmd.h"
 #include "../terraform_cmd.h"
@@ -102,7 +103,7 @@ static constexpr auto _callback_tuple = std::make_tuple(
 
 /* Helpers to generate the callback table from the callback list. */
 
-inline constexpr size_t _callback_tuple_size = std::tuple_size_v<decltype(_callback_tuple)>;
+constexpr size_t _callback_tuple_size = std::tuple_size_v<decltype(_callback_tuple)>;
 
 template <size_t... i>
 inline auto MakeCallbackTable(std::index_sequence<i...>) noexcept
@@ -165,7 +166,7 @@ constexpr UnpackDispatchT MakeUnpackNetworkCommand(std::index_sequence<i...>) no
 }
 
 template <typename T, T... i, size_t... j>
-inline constexpr auto MakeDispatchTable(std::integer_sequence<T, i...>, std::index_sequence<j...>) noexcept
+constexpr auto MakeDispatchTable(std::integer_sequence<T, i...>, std::index_sequence<j...>) noexcept
 {
 	return EnumIndexArray<CommandDispatch, Commands, static_cast<Commands>(sizeof...(i))>{{{ { &SanitizeCmdStrings<static_cast<Commands>(i)>, &NetworkReplaceCommandClientId<static_cast<Commands>(i)>, MakeUnpackNetworkCommand<static_cast<Commands>(i)>(std::make_index_sequence<_callback_tuple_size>{}) }... }}};
 }
@@ -304,7 +305,7 @@ static void DistributeCommandPacket(CommandPacket &cp, const NetworkClientSocket
 	cp.frame = _frame_counter_max + 1;
 
 	for (NetworkClientSocket *cs : NetworkClientSocket::Iterate()) {
-		if (cs->status >= NetworkClientSocket::STATUS_MAP) {
+		if (cs->status >= NetworkClientSocket::ClientStatus::Map) {
 			/* Callbacks are only send back to the client who sent them in the
 			 *  first place. This filters that out. */
 			cp.callback = (cs != owner) ? nullptr : callback;
@@ -377,7 +378,7 @@ std::optional<std::string_view> NetworkGameSocketHandler::ReceiveCommand(Packet 
 	cp.cmd     = static_cast<Commands>(p.Recv_uint16());
 	if (!IsValidCommand(cp.cmd)) return "invalid command";
 	if (GetCommandFlags(cp.cmd).Test(CommandFlag::Offline)) return "single-player only command";
-	cp.err_msg = p.Recv_uint16();
+	cp.err_msg = static_cast<StringID>(p.Recv_uint16());
 	cp.data    = _cmd_dispatch[cp.cmd].Sanitize(p.Recv_buffer());
 
 	uint8_t callback = p.Recv_uint8();
@@ -396,12 +397,12 @@ void NetworkGameSocketHandler::SendCommand(Packet &p, const CommandPacket &cp)
 {
 	p.Send_uint8(cp.company);
 	p.Send_uint16(to_underlying(cp.cmd));
-	p.Send_uint16(cp.err_msg);
+	p.Send_uint16(cp.err_msg.base());
 	p.Send_buffer(cp.data);
 
 	size_t callback = FindCallbackIndex(cp.callback);
 	if (callback > UINT8_MAX || _cmd_dispatch[cp.cmd].Unpack[callback] == nullptr) {
-		Debug(net, 0, "Unknown callback for command; no callback sent (command: {})", cp.cmd);
+		Debug(Facility::Net, Severity::Critical, "Unknown callback for command; no callback sent (command: {})", cp.cmd);
 		callback = 0; // _callback_table[0] == nullptr
 	}
 	p.Send_uint8 ((uint8_t)callback);

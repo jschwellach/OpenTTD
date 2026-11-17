@@ -10,8 +10,6 @@
 #include "stdafx.h"
 #include "command_func.h"
 #include "vehicle_gui.h"
-#include "newgrf_badge.h"
-#include "newgrf_engine.h"
 #include "rail.h"
 #include "road.h"
 #include "strings_func.h"
@@ -58,7 +56,7 @@ void InvalidateAutoreplaceWindow(EngineID e, GroupID id_g)
 		/* We don't have any of this engine type.
 		 * Either we just sold the last one, we build a new one or we stopped replacing it.
 		 * In all cases, we need to update the left list */
-		InvalidateWindowData(WC_REPLACE_VEHICLE, Engine::Get(e)->type, 1);
+		InvalidateWindowData(WindowClass::ReplaceVehicle, Engine::Get(e)->type, 1);
 	}
 }
 
@@ -68,8 +66,8 @@ void InvalidateAutoreplaceWindow(EngineID e, GroupID id_g)
  */
 void AddRemoveEngineFromAutoreplaceAndBuildWindows(VehicleType type)
 {
-	InvalidateWindowData(WC_REPLACE_VEHICLE, type, 0); // Update the autoreplace window
-	InvalidateWindowClassesData(WC_BUILD_VEHICLE); // The build windows needs updating as well
+	InvalidateWindowData(WindowClass::ReplaceVehicle, type, 0); // Update the autoreplace window
+	InvalidateWindowClassesData(WindowClass::BuildVehicle); // The build windows needs updating as well
 }
 
 static const StringID _start_replace_dropdown[] = {
@@ -432,7 +430,7 @@ public:
 	{
 		switch (widget) {
 			case WID_RV_SORT_ASCENDING_DESCENDING:
-				this->DrawSortButtonState(WID_RV_SORT_ASCENDING_DESCENDING, this->descending_sort_order ? SBS_DOWN : SBS_UP);
+				this->DrawSortButton(WID_RV_SORT_ASCENDING_DESCENDING, this->descending_sort_order);
 				break;
 
 			case WID_RV_INFO_TAB: {
@@ -450,7 +448,7 @@ public:
 					str = GetString(STR_REPLACE_NOT_REPLACING_VEHICLE_SELECTED);
 				}
 
-				DrawString(r.Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect), std::move(str), TC_BLACK, SA_HOR_CENTER);
+				DrawString(r.Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect), std::move(str), TextColour::Black, AlignmentH::Centre);
 				break;
 			}
 
@@ -554,7 +552,7 @@ public:
 			case WID_RV_TRAIN_WAGONREMOVE_TOGGLE: {
 				const Group *g = Group::GetIfValid(this->sel_group);
 				if (g != nullptr) {
-					Command<Commands::SetGroupFlag>::Post(this->sel_group, GroupFlag::ReplaceWagonRemoval, !g->flags.Test(GroupFlag::ReplaceWagonRemoval), _ctrl_pressed);
+					Command<Commands::SetGroupFlag>::Post(this->sel_group, GroupFlag::ReplaceWagonRemoval, !g->flags.Test(GroupFlag::ReplaceWagonRemoval), IsCtrlPressed());
 				} else {
 					/* toggle renew_keep_length */
 					Command<Commands::ChangeCompanySetting>::Post("company.renew_keep_length", Company::Get(_local_company)->settings.renew_keep_length ? 0 : 1);
@@ -599,8 +597,8 @@ public:
 						Engine *engine = Engine::Get(item.variant_id);
 						engine->display_flags.Flip(EngineDisplayFlag::IsFolded);
 
-						InvalidateWindowData(WC_REPLACE_VEHICLE, this->window_number, 0); // Update the autoreplace window
-						InvalidateWindowClassesData(WC_BUILD_VEHICLE); // The build windows needs updating as well
+						InvalidateWindowData(WindowClass::ReplaceVehicle, this->window_number, 0); // Update the autoreplace window
+						InvalidateWindowClassesData(WindowClass::BuildVehicle); // The build windows needs updating as well
 						return;
 					}
 					if (!item.flags.Test(EngineDisplayFlag::Shaded)) e = item.engine_id;
@@ -608,7 +606,7 @@ public:
 
 				/* If Ctrl is pressed on the left side and we don't have any engines of the selected type, stop autoreplacing.
 				 * This is most common when we have finished autoreplacing the engine and want to remove it from the list. */
-				if (click_side == 0 && _ctrl_pressed && e != EngineID::Invalid() &&
+				if (click_side == 0 && IsCtrlPressed() && e != EngineID::Invalid() &&
 					(GetGroupNumEngines(_local_company, sel_group, e) == 0 || GetGroupNumEngines(_local_company, ALL_GROUP, e) == 0)) {
 						EngineID veh_from = e;
 						Command<Commands::SetAutoreplace>::Post(this->sel_group, veh_from, EngineID::Invalid(), false);
@@ -763,7 +761,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_replace_rail_vehicle
 /** Window definition for the replace rail vehicle window. */
 static WindowDesc _replace_rail_vehicle_desc(
 	WindowPosition::Automatic, "replace_vehicle_train", 500, 140,
-	WC_REPLACE_VEHICLE, WC_NONE,
+	WindowClass::ReplaceVehicle, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_replace_rail_vehicle_widgets
 );
@@ -822,7 +820,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_replace_road_vehicle
 /** Window definition for the replace road vehicle window. */
 static WindowDesc _replace_road_vehicle_desc(
 	WindowPosition::Automatic, "replace_vehicle_road", 500, 140,
-	WC_REPLACE_VEHICLE, WC_NONE,
+	WindowClass::ReplaceVehicle, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_replace_road_vehicle_widgets
 );
@@ -877,7 +875,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_replace_vehicle_widg
 /** Window definition for the replace ship/aircraft window. */
 static WindowDesc _replace_vehicle_desc(
 	WindowPosition::Automatic, "replace_vehicle", 456, 118,
-	WC_REPLACE_VEHICLE, WC_NONE,
+	WindowClass::ReplaceVehicle, WindowClass::None,
 	WindowDefaultFlag::Construction,
 	_nested_replace_vehicle_widgets
 );
@@ -889,7 +887,7 @@ static WindowDesc _replace_vehicle_desc(
  */
 void ShowReplaceGroupVehicleWindow(GroupID id_g, VehicleType vehicletype)
 {
-	CloseWindowById(WC_REPLACE_VEHICLE, vehicletype);
+	CloseWindowById(WindowClass::ReplaceVehicle, vehicletype);
 	switch (vehicletype) {
 		case VehicleType::Train: new ReplaceVehicleWindow(_replace_rail_vehicle_desc, vehicletype, id_g); break;
 		case VehicleType::Road: new ReplaceVehicleWindow(_replace_road_vehicle_desc, vehicletype, id_g); break;

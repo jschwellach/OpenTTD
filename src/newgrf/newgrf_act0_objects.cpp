@@ -78,7 +78,7 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 	ChangeInfoResult ret = ChangeInfoResult::Success;
 
 	if (last > NUM_OBJECTS_PER_GRF) {
-		GrfMsg(1, "ObjectChangeInfo: Too many objects loaded ({}), max ({}). Ignoring.", last, NUM_OBJECTS_PER_GRF);
+		GrfMsg(Severity::Error, "ObjectChangeInfo: Too many objects loaded ({}), max ({}). Ignoring.", last, NUM_OBJECTS_PER_GRF);
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -96,7 +96,7 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 		}
 
 		switch (prop) {
-			case 0x08: { // Class ID
+			case 0x08: // Class ID
 				/* Allocate space for this object. */
 				if (spec == nullptr) {
 					spec = std::make_unique<ObjectSpec>();
@@ -104,16 +104,12 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 					spec->size = OBJECT_SIZE_1X1; // Default for NewGRFs that manage to not set it (1x1)
 				}
 
-				/* Swap classid because we read it in BE. */
-				uint32_t classid = buf.ReadDWord();
-				spec->class_index = ObjectClass::Allocate(std::byteswap(classid));
+				spec->class_index = ObjectClass::Allocate(buf.ReadLabel<ObjectClass::GlobalID>());
 				break;
-			}
 
-			case 0x09: { // Class name
+			case 0x09: // Class name
 				AddStringForMapping(GRFStringID{buf.ReadWord()}, [spec = spec.get()](StringID str) { ObjectClass::Get(spec->class_index)->name = str; });
 				break;
-			}
 
 			case 0x0A: // Object name
 				AddStringForMapping(GRFStringID{buf.ReadWord()}, &spec->name);
@@ -126,7 +122,7 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 			case 0x0C: // Size
 				spec->size = buf.ReadByte();
 				if (GB(spec->size, 0, 4) == 0 || GB(spec->size, 4, 4) == 0) {
-					GrfMsg(0, "ObjectChangeInfo: Invalid object size requested (0x{:X}) for object id {}. Ignoring.", spec->size, id);
+					GrfMsg(Severity::Critical, "ObjectChangeInfo: Invalid object size requested (0x{:X}) for object id {}. Ignoring.", spec->size, id);
 					spec->size = OBJECT_SIZE_1X1;
 				}
 				break;
@@ -145,13 +141,13 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 				break;
 
 			case 0x10: // Flags
-				spec->flags = (ObjectFlags)buf.ReadWord();
+				spec->flags = ObjectFlags{buf.ReadWord()};
 				_loaded_newgrf_features.has_2CC |= spec->flags.Test(ObjectFlag::Uses2CC);
 				break;
 
 			case 0x11: // Animation info
 				spec->animation.frames = buf.ReadByte();
-				spec->animation.status = static_cast<AnimationStatus>(buf.ReadByte());
+				spec->animation.status = AnimationStatus{buf.ReadByte()};
 				break;
 
 			case 0x12: // Animation speed
@@ -159,7 +155,7 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 				break;
 
 			case 0x13: // Animation triggers
-				spec->animation.triggers = static_cast<ObjectAnimationTriggers>(buf.ReadWord());
+				spec->animation.triggers = ObjectAnimationTriggers{buf.ReadWord()};
 				break;
 
 			case 0x14: // Removal cost multiplier
@@ -177,7 +173,7 @@ static ChangeInfoResult ObjectChangeInfo(uint first, uint last, int prop, ByteRe
 			case 0x17: // Views
 				spec->views = buf.ReadByte();
 				if (spec->views != 1 && spec->views != 2 && spec->views != 4) {
-					GrfMsg(2, "ObjectChangeInfo: Invalid number of views ({}) for object id {}. Ignoring.", spec->views, id);
+					GrfMsg(Severity::Warning, "ObjectChangeInfo: Invalid number of views ({}) for object id {}. Ignoring.", spec->views, id);
 					spec->views = 1;
 				}
 				break;

@@ -12,6 +12,7 @@
 #include "../debug.h"
 #include "../fileio_func.h"
 #include "../tar_type.h"
+#include "../script/api/script_text.hpp"
 #include "../script/squirrel_class.hpp"
 #include "../strings_func.h"
 #include "game_text.hpp"
@@ -19,25 +20,26 @@
 #include "game_info.hpp"
 
 #include "table/strings.h"
+#include "../table/control_codes.h"
 #include "../table/strgen_tables.h"
 
 #include "../safeguards.h"
 
 void CDECL StrgenWarningI(const std::string &msg)
 {
-	Debug(script, 0, "{}:{}: warning: {}", _strgen.file, _strgen.cur_line, msg);
+	Debug(Facility::Script, Severity::Critical, "{}:{}: warning: {}", _strgen.file, _strgen.cur_line, msg);
 	_strgen.warnings++;
 }
 
 void CDECL StrgenErrorI(const std::string &msg)
 {
-	Debug(script, 0, "{}:{}: error: {}", _strgen.file, _strgen.cur_line, msg);
+	Debug(Facility::Script, Severity::Critical, "{}:{}: error: {}", _strgen.file, _strgen.cur_line, msg);
 	_strgen.errors++;
 }
 
 void CDECL StrgenFatalI(const std::string &msg)
 {
-	Debug(script, 0, "{}:{}: FATAL: {}", _strgen.file, _strgen.cur_line, msg);
+	Debug(Facility::Script, Severity::Critical, "{}:{}: FATAL: {}", _strgen.file, _strgen.cur_line, msg);
 	throw std::exception();
 }
 

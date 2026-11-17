@@ -930,6 +930,8 @@ STR_CONFIG_SETTING_INFRASTRUCTURE_MAINTENANCE                   :Инфраст�
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 
 ###length 2
 
@@ -943,6 +945,7 @@ STR_CONFIG_SETTING_GRAPH_LINE_THICKNESS                         :Дебелин�
 
 
 ###length 2
+
 
 
 
@@ -1055,7 +1058,8 @@ STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Информа�
 
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN                           :Отворање на индустрии: {STRING}
 
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE                          :Затворање на индустрии: {STRING}
+
+
 
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES                         :Промени во економијата: {STRING}
 
@@ -1393,11 +1397,7 @@ STR_FUND_INDUSTRY_BUILD_NEW_INDUSTRY                            :{BLACK}Изгр
 # Industry cargoes window
 STR_INDUSTRY_CARGOES_INDUSTRY_CAPTION                           :{WHITE}Индустрија Верига за {STRING} индустрија
 STR_INDUSTRY_CARGOES_CARGO_CAPTION                              :{WHITE}Индустрија Верига за {STRING} товар
-STR_INDUSTRY_CARGOES_PRODUCERS                                  :{WHITE}Производство индустрии
-STR_INDUSTRY_CARGOES_CUSTOMERS                                  :{WHITE}Прифаќањето индустрии
 STR_INDUSTRY_CARGOES_HOUSES                                     :{WHITE}Имотот
-STR_INDUSTRY_CARGOES_INDUSTRY_TOOLTIP                           :{BLACK}Кликни на индустрија за да ја видите неговите добавувачи и клиенти
-STR_INDUSTRY_CARGOES_CARGO_TOOLTIP                              :{BLACK}{STRING}{}Кликни на товар да се види неговите добавувачи и клиенти
 STR_INDUSTRY_DISPLAY_CHAIN                                      :{BLACK}Прикажи синџир
 STR_INDUSTRY_DISPLAY_CHAIN_TOOLTIP                              :{BLACK}Прикажи карго снабдување и прифаќање на индустрии
 STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP                            :{BLACK}Линк кон мали сајтот
@@ -1585,6 +1585,7 @@ STR_GOALS_NONE                                                  :{ORANGE}- Ни�
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Кликнете на цел центар главниот приказ на индустријата / град / плочка. Ctrl + Кликнете отвора нов прозорец на индустријата / град / плочка Локација
 
 # Goal question window
+###length 4
 
 # Goal Question button list
 ###length 18
@@ -1862,15 +1863,14 @@ STR_QUERY_RENAME_AIRCRAFT_CAPTION                               :{WHITE}Име �
 
 # Extra buttons for train details windows
 
+
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_TEXT                   :{BLACK}Вкупен капацитет на овој воз:
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY                        :{LTBLUE}- {CARGO_LONG} ({CARGO_SHORT})
-STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_MULT                   :{LTBLUE}- {CARGO_LONG} ({CARGO_SHORT}) (x{NUM})
+
 
 
 STR_VEHICLE_DETAIL_TAB_CARGO                                    :{BLACK}Товар
 STR_VEHICLE_DETAIL_TAB_INFORMATION                              :{BLACK}Информација
-STR_VEHICLE_DETAIL_TAB_CAPACITIES                               :{BLACK}Капацитети
-STR_VEHICLE_DETAIL_TAB_TOTAL_CARGO                              :{BLACK}Вкупно Товар
 
 STR_VEHICLE_DETAILS_TRAIN_ARTICULATED_RV_CAPACITY               :{BLACK}Капацитет: {LTBLUE}{STRING}
 

@@ -13,6 +13,7 @@
 #include "../network_internal.h"
 #include "../../debug.h"
 #include "../../error.h"
+#include "../../openttd.h"
 #include "../../strings_func.h"
 
 #include "table/strings.h"
@@ -40,14 +41,14 @@ NetworkRecvStatus NetworkGameSocketHandler::CloseConnection([[maybe_unused]] boo
 	/* Clients drop back to the main menu */
 	if (!_network_server && _networking) {
 		ClientNetworkEmergencySave();
-		_switch_mode = SM_MENU;
+		_switch_mode = SwitchMode::Menu;
 		_networking = false;
-		ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_LOSTCONNECTION), {}, WL_CRITICAL);
+		ShowErrorMessage(GetEncodedString(STR_NETWORK_ERROR_LOSTCONNECTION), {}, WarningLevel::Critical);
 
-		return this->CloseConnection(NETWORK_RECV_STATUS_CLIENT_QUIT);
+		return this->CloseConnection(NetworkRecvStatus::ClientQuit);
 	}
 
-	return this->CloseConnection(NETWORK_RECV_STATUS_CONNECTION_LOST);
+	return this->CloseConnection(NetworkRecvStatus::ConnectionLost);
 }
 
 
@@ -107,9 +108,9 @@ NetworkRecvStatus NetworkGameSocketHandler::HandlePacket(Packet &p)
 		case PacketGameType::ServerConfigurationUpdate: return this->ReceiveServerConfigurationUpdate(p);
 
 		default:
-			Debug(net, 0, "[tcp/game] Received invalid packet type {} from client {}", type, this->client_id);
+			Debug(Facility::Net, Severity::Critical, "[tcp/game] Received invalid packet type {} from client {}", type, this->client_id);
 			this->CloseConnection();
-			return NETWORK_RECV_STATUS_MALFORMED_PACKET;
+			return NetworkRecvStatus::MalformedPacket;
 	}
 }
 
@@ -125,10 +126,10 @@ NetworkRecvStatus NetworkGameSocketHandler::ReceivePackets()
 	std::unique_ptr<Packet> p;
 	while ((p = this->ReceivePacket()) != nullptr) {
 		NetworkRecvStatus res = HandlePacket(*p);
-		if (res != NETWORK_RECV_STATUS_OKAY) return res;
+		if (res != NetworkRecvStatus::Okay) return res;
 	}
 
-	return NETWORK_RECV_STATUS_OKAY;
+	return NetworkRecvStatus::Okay;
 }
 
 /**
@@ -138,8 +139,8 @@ NetworkRecvStatus NetworkGameSocketHandler::ReceivePackets()
  */
 NetworkRecvStatus NetworkGameSocketHandler::ReceiveInvalidPacket(PacketGameType type)
 {
-	Debug(net, 0, "[tcp/game] Received illegal packet type {} from client {}", type, this->client_id);
-	return NETWORK_RECV_STATUS_MALFORMED_PACKET;
+	Debug(Facility::Net, Severity::Critical, "[tcp/game] Received illegal packet type {} from client {}", type, this->client_id);
+	return NetworkRecvStatus::MalformedPacket;
 }
 
 NetworkRecvStatus NetworkGameSocketHandler::ReceiveServerFull(Packet &) { return this->ReceiveInvalidPacket(PacketGameType::ServerFull); }

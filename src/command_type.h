@@ -400,7 +400,10 @@ enum class DoCommandFlag : uint8_t {
 	AllTiles, ///< allow this command also on TileType::Void tiles
 	NoModifyTownRating, ///< do not change town rating
 	ForceClearTile, ///< do not only remove the object on the tile, but also clear any water left on it
+	ClearToRocks, ///< when clearing land, make rocks instead of bare dirt/grass
 };
+
+/** Bitset of \c DoCommandFlag elements. */
 using DoCommandFlags = EnumBitSet<DoCommandFlag, uint16_t>;
 
 /**
@@ -422,6 +425,8 @@ enum class CommandFlag : uint8_t {
 	NoEst, ///< the command is never estimated.
 	Location, ///< the command has implicit location argument.
 };
+
+/** Bitset of \c CommandFlag elements. */
 using CommandFlags = EnumBitSet<CommandFlag, uint16_t>;
 
 /** Types of commands we have. */
@@ -479,7 +484,7 @@ template <Commands Tcmd> struct CommandTraits;
 		static constexpr auto &proc = proc_; \
 		static constexpr CommandFlags flags = flags_; \
 		static constexpr CommandType type = type_; \
-		static inline constexpr std::string_view name = #proc_; \
+		static constexpr std::string_view name = #proc_; \
 	};
 
 /** Storage buffer for serialized command data. */

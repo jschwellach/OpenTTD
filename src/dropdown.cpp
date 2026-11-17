@@ -116,7 +116,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_dropdown_menu_widget
 /** Window description for dropdown menus. */
 static WindowDesc _dropdown_desc(
 	WindowPosition::Manual, {}, 0, 0,
-	WC_DROPDOWN_MENU, WC_NONE,
+	WindowClass::DropdownMenu, WindowClass::None,
 	{},
 	_nested_dropdown_menu_widgets
 );
@@ -219,6 +219,10 @@ struct DropdownWindow : Window {
 	{
 		if (!closing) {
 			this->options.Reset(DropDownOption::InstantClose);
+
+			/* Focus was taken by a child window, so stay open. */
+			if (_focused_window != nullptr && _focused_window->parent == this) return;
+
 			this->Close();
 		}
 	}
@@ -456,7 +460,7 @@ struct DropdownWindow : Window {
 		if (this->drag_mode) {
 			int result, click_result;
 
-			if (!_left_button_clicked) {
+			if (!IsLeftButtonDown()) {
 				this->drag_mode = false;
 				if (!this->GetDropDownItem(result, click_result)) {
 					if (this->options.Test(DropDownOption::InstantClose)) this->Close();
@@ -535,7 +539,7 @@ struct DropdownWindow : Window {
 
 void ReplaceDropDownList(Window *parent, DropDownList &&list, std::optional<int> selected_result)
 {
-	DropdownWindow *ddw = dynamic_cast<DropdownWindow *>(parent->FindChildWindow(WC_DROPDOWN_MENU));
+	DropdownWindow *ddw = dynamic_cast<DropdownWindow *>(parent->FindChildWindow(WindowClass::DropdownMenu));
 	if (ddw != nullptr) ddw->ReplaceList(std::move(list), selected_result);
 }
 
@@ -569,7 +573,7 @@ Dimension GetDropDownListDimension(const DropDownList &list)
  */
 void ShowDropDownListAt(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, DropDownOptions options, std::string * const persistent_filter_text)
 {
-	CloseWindowByClass(WC_DROPDOWN_MENU);
+	CloseWindowByClass(WindowClass::DropdownMenu);
 	new DropdownWindow(w, std::move(list), selected, button, wi_rect, wi_colour, options, persistent_filter_text);
 }
 

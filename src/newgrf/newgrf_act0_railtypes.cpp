@@ -32,7 +32,7 @@ static ChangeInfoResult RailTypeChangeInfo(uint first, uint last, int prop, Byte
 	const auto &type_map = _cur_gps.grffile->railtype_map;
 
 	if (last > std::size(type_map)) {
-		GrfMsg(1, "RailTypeChangeInfo: Rail type {} is invalid, max {}, ignoring", last, std::size(type_map));
+		GrfMsg(Severity::Error, "RailTypeChangeInfo: Rail type {} is invalid, max {}, ignoring", last, std::size(type_map));
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -83,8 +83,7 @@ static ChangeInfoResult RailTypeChangeInfo(uint first, uint last, int prop, Byte
 				 * default rail types. */
 				int n = buf.ReadByte();
 				for (int j = 0; j != n; j++) {
-					RailTypeLabel label = buf.ReadDWord();
-					RailType resolved_rt = GetRailTypeByLabel(std::byteswap(label), false);
+					RailType resolved_rt = GetRailTypeByLabel(buf.ReadLabel<RailTypeLabel>(), false);
 					if (resolved_rt != INVALID_RAILTYPE) {
 						switch (prop) {
 							case 0x0F: rti->powered_railtypes.Set(resolved_rt);               [[fallthrough]]; // Powered implies compatible.
@@ -98,7 +97,7 @@ static ChangeInfoResult RailTypeChangeInfo(uint first, uint last, int prop, Byte
 			}
 
 			case 0x10: // Rail Type flags
-				rti->flags = static_cast<RailTypeFlags>(buf.ReadByte());
+				rti->flags = RailTypeFlags{buf.ReadByte()};
 				break;
 
 			case 0x11: // Curve speed advantage
@@ -118,7 +117,7 @@ static ChangeInfoResult RailTypeChangeInfo(uint first, uint last, int prop, Byte
 				break;
 
 			case 0x15: // Acceleration model
-				rti->acceleration_type = static_cast<VehicleAccelerationModel>(Clamp(buf.ReadByte(), 0, 2));
+				rti->acceleration_type = VehicleAccelerationModel{Clamp<uint8_t>(buf.ReadByte(), 0, 2)};
 				break;
 
 			case 0x16: // Map colour
@@ -167,7 +166,7 @@ static ChangeInfoResult RailTypeReserveInfo(uint first, uint last, int prop, Byt
 	auto &type_map = _cur_gps.grffile->railtype_map;
 
 	if (last > std::size(type_map)) {
-		GrfMsg(1, "RailTypeReserveInfo: Rail type {} is invalid, max {}, ignoring", last, std::size(type_map));
+		GrfMsg(Severity::Error, "RailTypeReserveInfo: Rail type {} is invalid, max {}, ignoring", last, std::size(type_map));
 		return ChangeInfoResult::InvalidId;
 	}
 
@@ -175,9 +174,7 @@ static ChangeInfoResult RailTypeReserveInfo(uint first, uint last, int prop, Byt
 		switch (prop) {
 			case 0x08: // Label of rail type
 			{
-				RailTypeLabel rtl = buf.ReadDWord();
-				rtl = std::byteswap(rtl);
-
+				RailTypeLabel rtl = buf.ReadLabel<RailTypeLabel>();
 				RailType rt = GetRailTypeByLabel(rtl, false);
 				if (rt == INVALID_RAILTYPE) {
 					/* Set up new rail type */
@@ -204,11 +201,11 @@ static ChangeInfoResult RailTypeReserveInfo(uint first, uint last, int prop, Byt
 				if (type_map[id] != INVALID_RAILTYPE) {
 					int n = buf.ReadByte();
 					for (int j = 0; j != n; j++) {
-						_railtypes[type_map[id]].alternate_labels.insert(std::byteswap(buf.ReadDWord()));
+						_railtypes[type_map[id]].alternate_labels.insert(buf.ReadLabel<RailTypeLabel>());
 					}
 					break;
 				}
-				GrfMsg(1, "RailTypeReserveInfo: Ignoring property 1D for rail type {} because no label was set", id);
+				GrfMsg(Severity::Error, "RailTypeReserveInfo: Ignoring property 1D for rail type {} because no label was set", id);
 				[[fallthrough]];
 
 			case 0x0E: // Compatible railtype list

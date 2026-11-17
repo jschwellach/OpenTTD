@@ -13,7 +13,6 @@
 #include "core/math_func.hpp"
 #include "framerate_type.h"
 #include "mixer.h"
-#include "settings_type.h"
 
 #include "safeguards.h"
 
@@ -125,7 +124,7 @@ void MxCloseAllChannels()
 
 void MxMixSamples(void *buffer, uint samples)
 {
-	PerformanceMeasurer framerate(PFE_SOUND);
+	PerformanceMeasurer framerate(PerformanceElement::Sound);
 	static uint last_samples = 0;
 	if (samples != last_samples) {
 		framerate.SetExpectedRate((double)_play_rate / samples);
@@ -248,6 +247,15 @@ bool MxInitialize(uint rate)
 	_max_size  = UINT_MAX / _play_rate;
 	_music_stream = nullptr; /* rate may have changed, any music source is now invalid */
 	return true;
+}
+
+/**
+ * Get the current mixer sampling rate.
+ * @return Current sampling rate.
+ */
+uint32_t MxGetRate()
+{
+	return _play_rate;
 }
 
 void SetEffectVolume(uint8_t volume)

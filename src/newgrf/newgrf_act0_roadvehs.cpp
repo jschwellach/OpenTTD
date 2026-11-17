@@ -69,7 +69,7 @@ static ChangeInfoResult RoadVehicleChangeInfo(uint first, uint last, int prop, B
 				if (IsValidNewGRFImageIndex<VehicleType::Road>(spriteid)) {
 					rvi->image_index = spriteid;
 				} else {
-					GrfMsg(1, "RoadVehicleChangeInfo: Invalid Sprite {} specified, ignoring", orig_spriteid);
+					GrfMsg(Severity::Error, "RoadVehicleChangeInfo: Invalid Sprite {} specified, ignoring", orig_spriteid);
 					rvi->image_index = 0;
 				}
 				break;
@@ -89,7 +89,7 @@ static ChangeInfoResult RoadVehicleChangeInfo(uint first, uint last, int prop, B
 				} else {
 					/* Use translated cargo. Might result in INVALID_CARGO (first refittable), if cargo is not defined. */
 					ei->cargo_type = GetCargoTranslation(ctype, _cur_gps.grffile);
-					if (ei->cargo_type == INVALID_CARGO) GrfMsg(2, "RoadVehicleChangeInfo: Invalid cargo type {}, using first refittable", ctype);
+					if (ei->cargo_type == INVALID_CARGO) GrfMsg(Severity::Warning, "RoadVehicleChangeInfo: Invalid cargo type {}, using first refittable", ctype);
 				}
 				ei->cargo_label = CT_INVALID;
 				break;
@@ -147,7 +147,7 @@ static ChangeInfoResult RoadVehicleChangeInfo(uint first, uint last, int prop, B
 				break;
 
 			case 0x1C: // Miscellaneous flags
-				ei->misc_flags = static_cast<EngineMiscFlags>(buf.ReadByte());
+				ei->misc_flags = EngineMiscFlags{buf.ReadByte()};
 				_loaded_newgrf_features.has_2CC |= ei->misc_flags.Test(EngineMiscFlag::Uses2CC);
 				break;
 
@@ -203,7 +203,7 @@ static ChangeInfoResult RoadVehicleChangeInfo(uint first, uint last, int prop, B
 			}
 
 			case 0x26: // Engine variant
-				ei->variant_id = static_cast<EngineID>(buf.ReadWord());
+				ei->variant_id = EngineID{buf.ReadWord()};
 				break;
 
 			case 0x27: // Extra miscellaneous flags

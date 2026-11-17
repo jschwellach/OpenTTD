@@ -17,7 +17,6 @@
 #include "strings_func.h"
 #include "command_func.h"
 #include "company_func.h"
-#include "company_base.h"
 #include "window_func.h"
 #include "waypoint_base.h"
 #include "station_base.h"
@@ -62,7 +61,7 @@ private:
 			default:
 				NOT_REACHED();
 		}
-		return this->wp->GetTileArea(type).GetCenterTile();
+		return this->wp->GetTileArea(type).GetCentreTile();
 	}
 
 public:
@@ -104,7 +103,7 @@ public:
 
 	void Close([[maybe_unused]] int data = 0) override
 	{
-		CloseWindowById(GetWindowClassForVehicleType(this->vt), VehicleListIdentifier(VL_STATION_LIST, this->vt, this->owner, this->window_number).ToWindowNumber(), false);
+		CloseWindowById(GetWindowClassForVehicleType(this->vt), VehicleListIdentifier(VehicleListType::Station, this->vt, this->owner, this->window_number).ToWindowNumber(), false);
 		SetViewportCatchmentWaypoint(Waypoint::Get(this->window_number), false);
 		this->Window::Close();
 	}
@@ -127,11 +126,11 @@ public:
 
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
-		Window *w = FindWindowByClass(WC_QUERY_STRING);
+		Window *w = FindWindowByClass(WindowClass::QueryString);
 
 		switch (widget) {
 			case WID_W_CENTER_VIEW: // scroll to location
-				if (_ctrl_pressed) {
+				if (IsCtrlPressed()) {
 					ShowExtraViewportWindow(this->GetCenterTile());
 				} else {
 					ScrollMainWindowToTile(this->GetCenterTile());
@@ -151,8 +150,8 @@ public:
 				SetViewportCatchmentWaypoint(Waypoint::Get(this->window_number), !this->IsWidgetLowered(WID_W_CATCHMENT));
 
 				if (w != nullptr && this->IsWidgetLowered(WID_W_CATCHMENT)) {
-					if (w->parent->window_class == WC_STATION_VIEW && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportStationRect(Station::Get(w->parent->window_number), true);
-					if (w->parent->window_class == WC_WAYPOINT_VIEW && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportWaypointRect(Waypoint::Get(w->parent->window_number), true);
+					if (w->parent->window_class == WindowClass::StationView && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportStationRect(Station::Get(w->parent->window_number), true);
+					if (w->parent->window_class == WindowClass::WaypointView && w->IsWidgetLowered(WID_QS_MOVE)) SetViewportWaypointRect(Waypoint::Get(w->parent->window_number), true);
 				}
 				break;
 		}
@@ -220,7 +219,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_waypoint_view_widget
 /** The description of the waypoint view. */
 static WindowDesc _waypoint_view_desc(
 	WindowPosition::Automatic, "view_waypoint", 260, 118,
-	WC_WAYPOINT_VIEW, WC_NONE,
+	WindowClass::WaypointView, WindowClass::None,
 	{},
 	_nested_waypoint_view_widgets
 );

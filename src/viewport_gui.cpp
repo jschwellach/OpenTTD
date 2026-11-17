@@ -8,7 +8,6 @@
 /** @file viewport_gui.cpp Extra viewport window. */
 
 #include "stdafx.h"
-#include "landscape.h"
 #include "window_gui.h"
 #include "viewport_func.h"
 #include "strings_func.h"
@@ -149,7 +148,7 @@ public:
 /** Window definition for the extra viewport window. */
 static WindowDesc _extra_viewport_desc(
 	WindowPosition::Automatic, "extra_viewport", 300, 268,
-	WC_EXTRA_VIEWPORT, WC_NONE,
+	WindowClass::ExtraViewport, WindowClass::None,
 	{},
 	_nested_extra_viewport_widgets
 );
@@ -163,7 +162,7 @@ void ShowExtraViewportWindow(TileIndex tile)
 	int i = 0;
 
 	/* find next free window number for extra viewport */
-	while (FindWindowById(WC_EXTRA_VIEWPORT, i) != nullptr) i++;
+	while (FindWindowById(WindowClass::ExtraViewport, i) != nullptr) i++;
 
 	new ExtraViewportWindow(_extra_viewport_desc, i, tile);
 }

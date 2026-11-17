@@ -10,8 +10,8 @@
 #ifndef CLEAR_MAP_H
 #define CLEAR_MAP_H
 
-#include "bridge_map.h"
 #include "industry_type.h"
+#include "tile_map.h"
 
 static constexpr size_t CLEAR_GROUND_BITS = 3; ///< How many bits in map array are dedicated for clear ground type.
 
@@ -189,7 +189,7 @@ inline void SetFieldType(Tile t, uint f)
 inline IndustryID GetIndustryIndexOfField(Tile t)
 {
 	assert(GetClearGround(t) == ClearGround::Fields);
-	return(IndustryID) t.m2();
+	return static_cast<IndustryID>(t.m2());
 }
 
 /**
@@ -217,10 +217,10 @@ inline uint GetFence(Tile t, DiagDirection side)
 	assert(IsClearGround(t, ClearGround::Fields));
 	switch (side) {
 		default: NOT_REACHED();
-		case DIAGDIR_SE: return GB(t.m4(), 2, 3);
-		case DIAGDIR_SW: return GB(t.m4(), 5, 3);
-		case DIAGDIR_NE: return GB(t.m3(), 5, 3);
-		case DIAGDIR_NW: return GB(t.m6(), 2, 3);
+		case DiagDirection::SE: return GB(t.m4(), 2, 3);
+		case DiagDirection::SW: return GB(t.m4(), 5, 3);
+		case DiagDirection::NE: return GB(t.m3(), 5, 3);
+		case DiagDirection::NW: return GB(t.m6(), 2, 3);
 	}
 }
 
@@ -236,10 +236,10 @@ inline void SetFence(Tile t, DiagDirection side, uint h)
 	assert(IsClearGround(t, ClearGround::Fields));
 	switch (side) {
 		default: NOT_REACHED();
-		case DIAGDIR_SE: SB(t.m4(), 2, 3, h); break;
-		case DIAGDIR_SW: SB(t.m4(), 5, 3, h); break;
-		case DIAGDIR_NE: SB(t.m3(), 5, 3, h); break;
-		case DIAGDIR_NW: SB(t.m6(), 2, 3, h); break;
+		case DiagDirection::SE: SB(t.m4(), 2, 3, h); break;
+		case DiagDirection::SW: SB(t.m4(), 5, 3, h); break;
+		case DiagDirection::NE: SB(t.m3(), 5, 3, h); break;
+		case DiagDirection::NW: SB(t.m6(), 2, 3, h); break;
 	}
 }
 

@@ -13,7 +13,6 @@
 #include "news_func.h"
 #include "newgrf_engine.h"
 #include "newgrf_sound.h"
-#include "error_func.h"
 #include "strings_func.h"
 #include "command_func.h"
 #include "window_func.h"
@@ -28,6 +27,7 @@
 #include "company_func.h"
 #include "effectvehicle_func.h"
 #include "station_base.h"
+#include "station_func.h"
 #include "engine_base.h"
 #include "core/random_func.hpp"
 #include "core/backup_type.hpp"
@@ -37,6 +37,9 @@
 #include "framerate_type.h"
 #include "aircraft_cmd.h"
 #include "vehicle_cmd.h"
+#include "script/api/script_event_types.hpp"
+
+#include "widgets/vehicle_widget.h"
 
 #include "table/strings.h"
 
@@ -152,8 +155,8 @@ static StationID FindNearestHangar(const Aircraft *v)
 
 		/* Check if our last and next destinations can be reached from the depot airport. */
 		if (max_range != 0) {
-			uint last_dist = (last_dest != nullptr && last_dest->airport.tile != INVALID_TILE) ? DistanceSquare(st->airport.tile, last_dest->airport.tile) : 0;
-			uint next_dist = (next_dest != nullptr && next_dest->airport.tile != INVALID_TILE) ? DistanceSquare(st->airport.tile, next_dest->airport.tile) : 0;
+			uint last_dist = (last_dest != nullptr && !last_dest->airport.IsEmpty()) ? DistanceSquare(st->airport.tile, last_dest->airport.tile) : 0;
+			uint next_dist = (next_dest != nullptr && !next_dest->airport.IsEmpty()) ? DistanceSquare(st->airport.tile, next_dest->airport.tile) : 0;
 			if (last_dist > max_range || next_dist > max_range) continue;
 		}
 
@@ -179,7 +182,7 @@ void Aircraft::GetImage(Direction direction, EngineImageType image_type, Vehicle
 	}
 
 	assert(IsValidImageIndex<VehicleType::Aircraft>(spritenum));
-	result->Set(direction + _aircraft_sprite[spritenum]);
+	result->Set(to_underlying(direction) + _aircraft_sprite[spritenum]);
 }
 
 void GetRotorImage(const Aircraft *v, EngineImageType image_type, VehicleSpriteSeq *result)
@@ -202,14 +205,14 @@ static void GetAircraftIcon(EngineID engine, EngineImageType image_type, Vehicle
 	uint8_t spritenum = e->VehInfo<AircraftVehicleInfo>().image_index;
 
 	if (IsCustomVehicleSpriteNum(spritenum)) {
-		GetCustomVehicleIcon(engine, DIR_W, image_type, result);
+		GetCustomVehicleIcon(engine, Direction::W, image_type, result);
 		if (result->IsValid()) return;
 
 		spritenum = e->original_image_index;
 	}
 
 	assert(IsValidImageIndex<VehicleType::Aircraft>(spritenum));
-	result->Set(DIR_W + _aircraft_sprite[spritenum]);
+	result->Set(to_underlying(Direction::W) + _aircraft_sprite[spritenum]);
 }
 
 void DrawAircraftEngine(int left, int right, int preferred_x, int y, EngineID engine, PaletteID pal, EngineImageType image_type)
@@ -280,7 +283,7 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 		Aircraft *u = Aircraft::Create(); // shadow
 		*ret = v;
 
-		v->direction = DIR_SE;
+		v->direction = Direction::SE;
 
 		v->owner = u->owner = _current_company;
 
@@ -369,7 +372,7 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 		if (v->subtype == AIR_HELICOPTER) {
 			Aircraft *w = Aircraft::Create();
 			w->engine_type = e->index;
-			w->direction = DIR_N;
+			w->direction = Direction::N;
 			w->owner = _current_company;
 			w->x_pos = v->x_pos;
 			w->y_pos = v->y_pos;
@@ -427,10 +430,10 @@ static void CheckIfAircraftNeedsService(Aircraft *v)
 	/* only goto depot if the target airport has a depot */
 	if (st->airport.HasHangar() && CanVehicleUseStation(v, st)) {
 		v->current_order.MakeGoToDepot(st->index, OrderDepotTypeFlag::Service);
-		SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 	} else if (v->current_order.IsType(OT_GOTO_DEPOT)) {
 		v->current_order.MakeDummy();
-		SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 	}
 }
 
@@ -470,8 +473,8 @@ void Aircraft::OnNewEconomyDay()
 
 	SubtractMoneyFromCompanyFract(this->owner, cost);
 
-	SetWindowDirty(WC_VEHICLE_DETAILS, this->index);
-	SetWindowClassesDirty(WC_AIRCRAFT_LIST);
+	SetWindowDirty(WindowClass::VehicleDetails, this->index);
+	SetWindowClassesDirty(WindowClass::AircraftList);
 }
 
 static void HelicopterTickHandler(Aircraft *v)
@@ -504,13 +507,13 @@ static void HelicopterTickHandler(Aircraft *v)
 	VehicleSpriteSeq seq;
 	if (spd == 0) {
 		u->state = HRS_ROTOR_STOPPED;
-		GetRotorImage(v, EIT_ON_MAP, &seq);
+		GetRotorImage(v, EngineImageType::OnMap, &seq);
 		if (u->sprite_cache.sprite_seq == seq) return;
 	} else if (tick >= spd) {
 		u->tick_counter = 0;
 		u->state++;
 		if (u->state > HRS_ROTOR_MOVING_3) u->state = HRS_ROTOR_MOVING_1;
-		GetRotorImage(v, EIT_ON_MAP, &seq);
+		GetRotorImage(v, EngineImageType::OnMap, &seq);
 	} else {
 		return;
 	}
@@ -536,7 +539,7 @@ void SetAircraftPosition(Aircraft *v, int x, int y, int z)
 	v->UpdatePosition();
 	v->UpdateViewport(true, false);
 	if (v->subtype == AIR_HELICOPTER) {
-		GetRotorImage(v, EIT_ON_MAP, &v->Next()->Next()->sprite_cache.sprite_seq);
+		GetRotorImage(v, EngineImageType::OnMap, &v->Next()->Next()->sprite_cache.sprite_seq);
 	}
 
 	Aircraft *u = v->Next();
@@ -584,7 +587,7 @@ void HandleAircraftEnterHangar(Aircraft *v)
 
 static void PlayAircraftSound(const Vehicle *v)
 {
-	if (!PlayVehicleSound(v, VSE_START)) {
+	if (!PlayVehicleSound(v, VehicleSoundEvent::Start)) {
 		SndPlayVehicleFx(AircraftVehInfo(v->engine_type)->sfx, v);
 	}
 }
@@ -683,7 +686,7 @@ static int UpdateAircraftSpeed(Aircraft *v, uint speed_limit = SPEED_LIMIT_NONE,
 	/* updates statusbar only if speed have changed to save CPU time */
 	if (spd != v->cur_speed) {
 		v->cur_speed = spd;
-		SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 	}
 
 	/* Adjust distance moved by plane speed setting */
@@ -732,10 +735,10 @@ void GetAircraftFlightLevelBounds(const Vehicle *v, int *min_level, int *max_lev
 	 * other by providing them with vertical separation
 	 */
 	switch (v->direction) {
-		case DIR_N:
-		case DIR_NE:
-		case DIR_E:
-		case DIR_SE:
+		case Direction::N:
+		case Direction::NE:
+		case Direction::E:
+		case Direction::SE:
 			base_altitude += 10;
 			break;
 
@@ -832,7 +835,7 @@ static uint8_t AircraftGetEntryPoint(const Aircraft *v, const AirportFTAClass *a
 	const Station *st = Station::GetIfValid(v->targetairport);
 	if (st != nullptr) {
 		/* Make sure we don't go to INVALID_TILE if the airport has been removed. */
-		tile = (st->airport.tile != INVALID_TILE) ? st->airport.tile : st->xy;
+		tile = !st->airport.IsEmpty() ? st->airport.tile : st->xy;
 	}
 
 	int delta_x = v->x_pos - TileX(tile) * TILE_SIZE;
@@ -841,13 +844,13 @@ static uint8_t AircraftGetEntryPoint(const Aircraft *v, const AirportFTAClass *a
 	DiagDirection dir;
 	if (abs(delta_y) < abs(delta_x)) {
 		/* We are northeast or southwest of the airport */
-		dir = delta_x < 0 ? DIAGDIR_NE : DIAGDIR_SW;
+		dir = delta_x < 0 ? DiagDirection::NE : DiagDirection::SW;
 	} else {
 		/* We are northwest or southeast of the airport */
-		dir = delta_y < 0 ? DIAGDIR_NW : DIAGDIR_SE;
+		dir = delta_y < 0 ? DiagDirection::NW : DiagDirection::SE;
 	}
-	dir = ChangeDiagDir(dir, DiagDirDifference(DIAGDIR_NE, DirToDiagDir(rotation)));
-	return apc->entry_points[dir];
+	dir = ChangeDiagDir(dir, DiagDirDifference(DiagDirection::NE, DirToDiagDir(rotation)));
+	return apc->entry_points[to_underlying(dir)];
 }
 
 
@@ -866,10 +869,10 @@ static bool AircraftController(Aircraft *v)
 	const Station *st = Station::GetIfValid(v->targetairport);
 	/* INVALID_TILE if there is no station */
 	TileIndex tile = INVALID_TILE;
-	Direction rotation = DIR_N;
+	Direction rotation = Direction::N;
 	uint size_x = 1, size_y = 1;
 	if (st != nullptr) {
-		if (st->airport.tile != INVALID_TILE) {
+		if (!st->airport.IsEmpty()) {
 			tile = st->airport.tile;
 			rotation = st->airport.rotation;
 			size_x = st->airport.w;
@@ -882,10 +885,10 @@ static bool AircraftController(Aircraft *v)
 	const AirportFTAClass *afc = tile == INVALID_TILE ? GetAirport(AT_DUMMY) : st->airport.GetFTA();
 
 	/* prevent going to INVALID_TILE if airport is deleted. */
-	if (st == nullptr || st->airport.tile == INVALID_TILE) {
+	if (st == nullptr || st->airport.IsEmpty()) {
 		/* Jump into our "holding pattern" state machine if possible */
 		if (v->pos >= afc->nofelements) {
-			v->pos = v->previous_pos = AircraftGetEntryPoint(v, afc, DIR_N);
+			v->pos = v->previous_pos = AircraftGetEntryPoint(v, afc, Direction::N);
 		} else if (v->targetairport != v->current_order.GetDestination()) {
 			/* If not possible, just get out of here fast */
 			v->state = FLYING;
@@ -911,7 +914,7 @@ static bool AircraftController(Aircraft *v)
 		if (u->cur_speed > 32) {
 			v->cur_speed = 0;
 			if (--u->cur_speed == 32) {
-				if (!PlayVehicleSound(v, VSE_START)) {
+				if (!PlayVehicleSound(v, VehicleSoundEvent::Start)) {
 					SoundID sfx = AircraftVehInfo(v->engine_type)->sfx;
 					/* For compatibility with old NewGRF we ignore the sfx property, unless a NewGRF-defined sound is used.
 					 * The baseset has only one helicopter sound, so this only limits using plane or cow sounds. */
@@ -997,14 +1000,14 @@ static bool AircraftController(Aircraft *v)
 		DirDiff dirdiff = DirDifference(amd.direction, v->direction);
 		/* if distance is 0, and plane points in right direction, no point in calling
 		 * UpdateAircraftSpeed(). So do it only afterwards */
-		if (dirdiff == DIRDIFF_SAME) {
+		if (dirdiff == DirDiff::Same) {
 			v->cur_speed = 0;
 			return true;
 		}
 
 		if (!UpdateAircraftSpeed(v, SPEED_LIMIT_TAXI)) return false;
 
-		v->direction = ChangeDir(v->direction, dirdiff > DIRDIFF_REVERSE ? DIRDIFF_45LEFT : DIRDIFF_45RIGHT);
+		v->direction = ChangeDir(v->direction, LimitDirDiff(dirdiff));
 		v->cur_speed >>= 1;
 
 		SetAircraftPosition(v, v->x_pos, v->y_pos, v->z_pos);
@@ -1141,7 +1144,7 @@ static bool AircraftController(Aircraft *v)
 				continue;
 			}
 
-			if (st->airport.tile == INVALID_TILE) {
+			if (st->airport.IsEmpty()) {
 				/* Airport has been removed, abort the landing procedure */
 				v->state = FLYING;
 				UpdateAircraftCache(v);
@@ -1207,7 +1210,7 @@ static bool HandleCrashedAircraft(Aircraft *v)
 		uint32_t r;
 		if (Chance16R(1, 32, r)) {
 			static const DirDiff delta[] = {
-				DIRDIFF_45LEFT, DIRDIFF_SAME, DIRDIFF_SAME, DIRDIFF_45RIGHT
+				DirDiff::Left45, DirDiff::Same, DirDiff::Same, DirDiff::Right45
 			};
 
 			v->direction = ChangeDir(v->direction, delta[GB(r, 16, 2)]);
@@ -1247,16 +1250,16 @@ static bool HandleCrashedAircraft(Aircraft *v)
  */
 static void HandleAircraftSmoke(Aircraft *v, bool mode)
 {
-	static const Coord2D<int8_t> smoke_pos[] = {
-		{  5,  5 },
-		{  6,  0 },
-		{  5, -5 },
-		{  0, -6 },
-		{ -5, -5 },
-		{ -6,  0 },
-		{ -5,  5 },
-		{  0,  6 }
-	};
+	static constexpr DirectionIndexArray<Coord2D<int8_t>> smoke_pos{{{
+		{ 5,  5},
+		{ 6,  0},
+		{ 5, -5},
+		{ 0, -6},
+		{-5, -5},
+		{-6,  0},
+		{-5,  5},
+		{ 0,  6},
+	}}};
 
 	if (!v->vehstatus.Test(VehState::AircraftBroken)) return;
 
@@ -1323,8 +1326,9 @@ void Aircraft::MarkDirty()
 	this->colourmap = PAL_NONE;
 	this->UpdateViewport(true, false);
 	if (this->subtype == AIR_HELICOPTER) {
-		GetRotorImage(this, EIT_ON_MAP, &this->Next()->Next()->sprite_cache.sprite_seq);
+		GetRotorImage(this, EngineImageType::OnMap, &this->Next()->Next()->sprite_cache.sprite_seq);
 	}
+	UpdateAircraftCache(this);
 }
 
 
@@ -1415,8 +1419,8 @@ static void AircraftEntersTerminal(Aircraft *v)
 	v->last_station_visited = v->targetairport;
 
 	/* Check if station was ever visited before */
-	if (!(st->had_vehicle_of_type & HVOT_AIRCRAFT)) {
-		st->had_vehicle_of_type |= HVOT_AIRCRAFT;
+	if (!st->had_vehicle_of_type.Test(StationVehicleType::Aircraft)) {
+		st->had_vehicle_of_type.Set(StationVehicleType::Aircraft);
 		/* show newsitem of celebrating citizens */
 		AddVehicleNewsItem(
 			GetEncodedString(STR_NEWS_FIRST_AIRCRAFT_ARRIVAL, st->index),
@@ -1445,7 +1449,7 @@ static void AircraftLandAirplane(Aircraft *v)
 
 	TriggerAirportTileAnimation(st, vt, AirportAnimationTrigger::AirplaneTouchdown);
 
-	if (!PlayVehicleSound(v, VSE_TOUCHDOWN)) {
+	if (!PlayVehicleSound(v, VehicleSoundEvent::Touchdown)) {
 		SndPlayVehicleFx(SND_17_SKID_PLANE, v);
 	}
 }
@@ -1463,7 +1467,7 @@ void AircraftNextAirportPos_and_Order(Aircraft *v)
 
 	const Station *st = GetTargetAirportIfValid(v);
 	const AirportFTAClass *apc = st == nullptr ? GetAirport(AT_DUMMY) : st->airport.GetFTA();
-	Direction rotation = st == nullptr ? DIR_N : st->airport.rotation;
+	Direction rotation = st == nullptr ? Direction::N : st->airport.rotation;
 	v->pos = v->previous_pos = AircraftGetEntryPoint(v, apc, rotation);
 }
 
@@ -1497,8 +1501,8 @@ void AircraftLeaveHangar(Aircraft *v, Direction exit_dir)
 	VehicleServiceInDepot(v);
 	v->LeaveUnbunchingDepot();
 	SetAircraftPosition(v, v->x_pos, v->y_pos, v->z_pos);
-	InvalidateWindowData(WC_VEHICLE_DEPOT, v->tile);
-	SetWindowClassesDirty(WC_AIRCRAFT_LIST);
+	InvalidateWindowData(WindowClass::VehicleDepot, v->tile);
+	SetWindowClassesDirty(WindowClass::AircraftList);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1583,7 +1587,7 @@ static void AircraftEventHandler_AtTerminal(Aircraft *v, const AirportFTAClass *
 				v->date_of_last_service_newgrf = TimerGameCalendar::date;
 				v->breakdowns_since_last_service = 0;
 				v->reliability = v->GetEngine()->reliability;
-				SetWindowDirty(WC_VEHICLE_DETAILS, v->index);
+				SetWindowDirty(WindowClass::VehicleDetails, v->index);
 			}
 		}
 		return;
@@ -1819,7 +1823,7 @@ static bool AirportMove(Aircraft *v, const AirportFTAClass *apc)
 {
 	/* error handling */
 	if (v->pos >= apc->nofelements) {
-		Debug(misc, 0, "[Ap] position {} is not valid for current airport. Max position is {}", v->pos, apc->nofelements - 1);
+		Debug(Facility::Misc, Severity::Critical, "[Ap] position {} is not valid for current airport. Max position is {}", v->pos, apc->nofelements - 1);
 		assert(v->pos < apc->nofelements);
 	}
 
@@ -1858,7 +1862,7 @@ static bool AirportMove(Aircraft *v, const AirportFTAClass *apc)
 		current = current->next.get();
 	} while (current != nullptr);
 
-	Debug(misc, 0, "[Ap] cannot move further on Airport! (pos {} state {}) for vehicle {}", v->pos, v->state, v->index);
+	Debug(Facility::Misc, Severity::Critical, "[Ap] cannot move further on Airport! (pos {} state {}) for vehicle {}", v->pos, v->state, v->index);
 	NOT_REACHED();
 }
 
@@ -2077,7 +2081,7 @@ static void AircraftHandleDestTooFar(Aircraft *v, bool too_far)
 	if (too_far) {
 		if (!v->flags.Test(VehicleAirFlag::DestinationTooFar)) {
 			v->flags.Set(VehicleAirFlag::DestinationTooFar);
-			SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
+			SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 			AI::NewEvent(v->owner, new ScriptEventAircraftDestTooFar(v->index));
 			if (v->owner == _local_company) {
 				/* Post a news message. */
@@ -2090,7 +2094,7 @@ static void AircraftHandleDestTooFar(Aircraft *v, bool too_far)
 	if (v->flags.Test(VehicleAirFlag::DestinationTooFar)) {
 		/* Not too far anymore, clear flag and message. */
 		v->flags.Reset(VehicleAirFlag::DestinationTooFar);
-		SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 		DeleteVehicleNews(v->index, AdviceType::AircraftDestinationTooFar);
 	}
 }
@@ -2126,7 +2130,7 @@ static bool AircraftEventHandler(Aircraft *v, int loop)
 		Station *cur_st = Station::GetIfValid(v->targetairport);
 		Station *next_st = v->current_order.IsType(OT_GOTO_STATION) || v->current_order.IsType(OT_GOTO_DEPOT) ? Station::GetIfValid(v->current_order.GetDestination().ToStationID()) : nullptr;
 
-		if (cur_st != nullptr && cur_st->airport.tile != INVALID_TILE && next_st != nullptr && next_st->airport.tile != INVALID_TILE) {
+		if (cur_st != nullptr && !cur_st->airport.IsEmpty() && next_st != nullptr && !next_st->airport.IsEmpty()) {
 			uint dist = DistanceSquare(cur_st->airport.tile, next_st->airport.tile);
 			AircraftHandleDestTooFar(v, dist > v->acache.cached_max_range_sqr);
 		}
@@ -2141,7 +2145,7 @@ bool Aircraft::Tick()
 {
 	if (!this->IsNormalAircraft()) return true;
 
-	PerformanceAccumulator framerate(PFE_GL_AIRCRAFT);
+	PerformanceAccumulator framerate(PerformanceElement::GameLoopAircraft);
 
 	this->tick_counter++;
 
@@ -2173,7 +2177,7 @@ Station *GetTargetAirportIfValid(const Aircraft *v)
 	Station *st = Station::GetIfValid(v->targetairport);
 	if (st == nullptr) return nullptr;
 
-	return st->airport.tile == INVALID_TILE ? nullptr : st;
+	return st->airport.IsEmpty() ? nullptr : st;
 }
 
 /**
@@ -2184,7 +2188,7 @@ void UpdateAirplanesOnNewStation(const Station *st)
 {
 	/* only 1 station is updated per function call, so it is enough to get entry_point once */
 	const AirportFTAClass *ap = st->airport.GetFTA();
-	Direction rotation = st->airport.tile == INVALID_TILE ? DIR_N : st->airport.rotation;
+	Direction rotation = st->airport.IsEmpty() ? Direction::N : st->airport.rotation;
 
 	for (Aircraft *v : Aircraft::Iterate()) {
 		if (!v->IsNormalAircraft() || v->targetairport != st->index) continue;
@@ -2196,7 +2200,7 @@ void UpdateAirplanesOnNewStation(const Station *st)
 		if (o->IsType(OT_GOTO_DEPOT) && !o->GetDepotOrderType().Test(OrderDepotTypeFlag::PartOfOrders) && o->GetDestination() == st->index &&
 				(!st->airport.HasHangar() || !CanVehicleUseStation(v, st))) {
 			o->MakeDummy();
-			SetWindowWidgetDirty(WC_VEHICLE_VIEW, v->index, WID_VV_START_STOP);
+			SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 		}
 		v->pos = v->previous_pos = AircraftGetEntryPoint(v, ap, rotation);
 		UpdateAircraftCache(v);

@@ -11,6 +11,7 @@
 #include "script_bridge.hpp"
 #include "script_rail.hpp"
 #include "../script_instance.hpp"
+#include "../../bridge.h"
 #include "../../bridge_map.h"
 #include "../../strings_func.h"
 #include "../../landscape_cmd.h"
@@ -86,11 +87,11 @@ static void _DoCommandReturnBuildBridge1(class ScriptInstance &instance)
 		case ScriptVehicle::VT_ROAD:
 			ScriptObject::SetCallbackVariable(0, start.base());
 			ScriptObject::SetCallbackVariable(1, end.base());
-			return ScriptObject::Command<Commands::BuildBridge>::Do(&::_DoCommandReturnBuildBridge1, end, start, TRANSPORT_ROAD, bridge_type, INVALID_RAILTYPE, static_cast<::RoadType>(ScriptRoad::GetCurrentRoadType()));
+			return ScriptObject::Command<Commands::BuildBridge>::Do(&::_DoCommandReturnBuildBridge1, end, start, TransportType::Road, bridge_type, INVALID_RAILTYPE, static_cast<::RoadType>(ScriptRoad::GetCurrentRoadType()));
 		case ScriptVehicle::VT_RAIL:
-			return ScriptObject::Command<Commands::BuildBridge>::Do(end, start, TRANSPORT_RAIL, bridge_type, static_cast<::RailType>(ScriptRail::GetCurrentRailType()), INVALID_ROADTYPE);
+			return ScriptObject::Command<Commands::BuildBridge>::Do(end, start, TransportType::Rail, bridge_type, static_cast<::RailType>(ScriptRail::GetCurrentRailType()), INVALID_ROADTYPE);
 		case ScriptVehicle::VT_WATER:
-			return ScriptObject::Command<Commands::BuildBridge>::Do(end, start, TRANSPORT_WATER, bridge_type, INVALID_RAILTYPE, INVALID_ROADTYPE);
+			return ScriptObject::Command<Commands::BuildBridge>::Do(end, start, TransportType::Water, bridge_type, INVALID_RAILTYPE, INVALID_ROADTYPE);
 		default: NOT_REACHED();
 	}
 }

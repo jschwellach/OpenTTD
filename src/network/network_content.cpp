@@ -14,11 +14,11 @@
 #include "../window_func.h"
 #include "../error.h"
 #include "../fileio_func.h"
+#include "../newgrf.h"
 #include "../base_media_base.h"
 #include "../base_media_graphics.h"
 #include "../base_media_music.h"
 #include "../base_media_sounds.h"
-#include "../settings_type.h"
 #include "../strings_func.h"
 #include "../timer/timer.h"
 #include "../timer/timer_window.h"
@@ -49,7 +49,7 @@ ClientNetworkContentSocketHandler _network_content_client;
 /** Check whether NewGRF content exists. @copydoc HasContentProc */
 static bool HasGRFConfig(const ContentInfo &ci, bool md5sum)
 {
-	return FindGRFConfig(std::byteswap(ci.unique_id), md5sum ? FindGRFConfigMode::Exact : FindGRFConfigMode::Any, md5sum ? &ci.md5sum : nullptr) != nullptr;
+	return FindGRFConfig(UnflattenNewGRFLabel<GrfID>(std::byteswap(ci.unique_id)), md5sum ? FindGRFConfigMode::Exact : FindGRFConfigMode::Any, md5sum ? &ci.md5sum : nullptr) != nullptr;
 }
 
 /**
@@ -288,7 +288,7 @@ void ClientNetworkContentSocketHandler::RequestContentList(ContentVector *cv, bo
  * @param[out] bytes The number of bytes we are going to download.
  * @param fallback Whether to use the fallback or not.
  */
-void ClientNetworkContentSocketHandler::DownloadSelectedContent(uint &files, uint &bytes, bool fallback)
+void ClientNetworkContentSocketHandler::DownloadSelectedContent(uint &files, uint64_t &bytes, bool fallback)
 {
 	bytes = 0;
 
@@ -462,23 +462,23 @@ bool ClientNetworkContentSocketHandler::ReceiveServerContent(Packet &p)
 		}
 	} else {
 		/* We have a file opened, thus are downloading internal content */
-		ssize_t to_read = p.RemainingBytesToTransfer();
+		std::ptrdiff_t to_read = p.RemainingBytesToTransfer();
 		auto write_to_disk = [this](std::span<const uint8_t> buffer) {
 			return fwrite(buffer.data(), 1, buffer.size(), *this->cur_file);
 		};
 		if (to_read != 0 && p.TransferOut(write_to_disk) != to_read) {
-			CloseWindowById(WC_NETWORK_STATUS_WINDOW, WN_NETWORK_STATUS_WINDOW_CONTENT_DOWNLOAD);
+			CloseWindowById(WindowClass::NetworkStatus, NetworkStatusWindowNumber::ContentDownload);
 			ShowErrorMessage(
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD),
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD_FILE_NOT_WRITABLE),
-				WL_ERROR);
+				WarningLevel::Error);
 			this->CloseConnection();
 			this->cur_file.reset();
 
 			return false;
 		}
 
-		this->OnDownloadProgress(*this->cur_info, (int)to_read);
+		this->OnDownloadProgress(*this->cur_info, to_read);
 
 		if (to_read == 0) this->AfterDownload();
 	}
@@ -502,11 +502,11 @@ bool ClientNetworkContentSocketHandler::BeforeDownload()
 		std::string filename = GetFullFilename(*this->cur_info, true);
 		if (filename.empty() || !(this->cur_file = FileHandle::Open(filename, "wb")).has_value()) {
 			/* Unless that fails of course... */
-			CloseWindowById(WC_NETWORK_STATUS_WINDOW, WN_NETWORK_STATUS_WINDOW_CONTENT_DOWNLOAD);
+			CloseWindowById(WindowClass::NetworkStatus, NetworkStatusWindowNumber::ContentDownload);
 			ShowErrorMessage(
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD),
 				GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_DOWNLOAD_FILE_NOT_WRITABLE),
-				WL_ERROR);
+				WarningLevel::Error);
 			return false;
 		}
 	}
@@ -545,7 +545,7 @@ void ClientNetworkContentSocketHandler::AfterDownload()
 
 		this->OnDownloadComplete(this->cur_info->id);
 	} else {
-		ShowErrorMessage(GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_EXTRACT), {}, WL_ERROR);
+		ShowErrorMessage(GetEncodedString(STR_CONTENT_ERROR_COULD_NOT_EXTRACT), {}, WarningLevel::Error);
 	}
 }
 
@@ -569,7 +569,8 @@ void ClientNetworkContentSocketHandler::OnFailure()
 
 	/* If we fail, download the rest via the 'old' system. */
 	if (!this->is_cancelled) {
-		uint files, bytes;
+		uint files;
+		uint64_t bytes;
 
 		this->DownloadSelectedContent(files, bytes, true);
 	}
@@ -605,7 +606,7 @@ void ClientNetworkContentSocketHandler::OnReceiveData(std::unique_ptr<char[]> da
 			this->OnFailure();
 		} else {
 			/* Just received the data. */
-			this->OnDownloadProgress(*this->cur_info, (int)length);
+			this->OnDownloadProgress(*this->cur_info, length);
 		}
 
 		/* Nothing more to do now. */
@@ -734,12 +735,12 @@ NetworkRecvStatus ClientNetworkContentSocketHandler::CloseConnection([[maybe_unu
 {
 	NetworkContentSocketHandler::CloseConnection();
 
-	if (this->sock == INVALID_SOCKET) return NETWORK_RECV_STATUS_OKAY;
+	if (this->sock == INVALID_SOCKET) return NetworkRecvStatus::Okay;
 
 	this->CloseSocket();
 	this->OnDisconnect();
 
-	return NETWORK_RECV_STATUS_OKAY;
+	return NetworkRecvStatus::Okay;
 }
 
 /**
@@ -1081,7 +1082,7 @@ void ClientNetworkContentSocketHandler::OnReceiveContentInfo(const ContentInfo &
 	}
 }
 
-void ClientNetworkContentSocketHandler::OnDownloadProgress(const ContentInfo &ci, int bytes)
+void ClientNetworkContentSocketHandler::OnDownloadProgress(const ContentInfo &ci, int64_t bytes)
 {
 	for (size_t i = 0; i < this->callbacks.size(); /* nothing */) {
 		ContentCallback *cb = this->callbacks[i];

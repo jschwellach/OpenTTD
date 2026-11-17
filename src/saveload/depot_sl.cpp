@@ -20,17 +20,17 @@
 static TownID _town_index;
 
 static const SaveLoad _depot_desc[] = {
-	 SLE_CONDVAR(Depot, xy,         SLE_FILE_U16 | SLE_VAR_U32, SL_MIN_VERSION, SLV_6),
-	 SLE_CONDVAR(Depot, xy,         SLE_UINT32,                 SLV_6, SL_MAX_VERSION),
-	SLEG_CONDVAR("town_index", _town_index, SLE_UINT16,       SL_MIN_VERSION, SLV_141),
-	 SLE_CONDREF(Depot, town,       REF_TOWN,                 SLV_141, SL_MAX_VERSION),
-	 SLE_CONDVAR(Depot, town_cn,    SLE_UINT16,               SLV_141, SL_MAX_VERSION),
-	SLE_CONDSSTR(Depot, name,       SLE_STR,                  SLV_141, SL_MAX_VERSION),
-	 SLE_CONDVAR(Depot, build_date, SLE_INT32,                SLV_142, SL_MAX_VERSION),
+	SaveLoad::Variable<VarFileType::U16>("xy", SLE_OBJECT_ADDRESS(Depot, xy), SaveLoadVersion::MinVersion, SaveLoadVersion::MultipleRoadStops),
+	SaveLoad::Variable<VarFileType::U32>("xy", SLE_OBJECT_ADDRESS(Depot, xy), SaveLoadVersion::MultipleRoadStops),
+	SaveLoad::Variable<VarFileType::U16>("town_index", SLE_GLOBAL_ADDRESS(_town_index), SaveLoadVersion::MinVersion, SaveLoadVersion::UniqueDepotNames),
+	SaveLoad::Reference<SLRefType::Town>("town", SLE_OBJECT_ADDRESS(Depot, town), SaveLoadVersion::UniqueDepotNames),
+	SaveLoad::Variable<VarFileType::U16>("town_cn", SLE_OBJECT_ADDRESS(Depot, town_cn), SaveLoadVersion::UniqueDepotNames),
+	SaveLoad::String("name", SLE_OBJECT_ADDRESS(Depot, name), {}, SaveLoadVersion::UniqueDepotNames),
+	SaveLoad::Variable<VarFileType::I32>("build_date", SLE_OBJECT_ADDRESS(Depot, build_date), SaveLoadVersion::NewGRFDepotBuildDate),
 };
 
 struct DEPTChunkHandler : ChunkHandler {
-	DEPTChunkHandler() : ChunkHandler('DEPT', CH_TABLE) {}
+	DEPTChunkHandler() : ChunkHandler("DEPT", ChunkType::Table) {}
 
 	void Save() const override
 	{
@@ -53,7 +53,7 @@ struct DEPTChunkHandler : ChunkHandler {
 			SlObject(depot, slt);
 
 			/* Set the town 'pointer' so we can restore it later. */
-			if (IsSavegameVersionBefore(SLV_141)) depot->town = reinterpret_cast<Town *>(static_cast<size_t>(_town_index.base()));
+			if (IsSavegameVersionBefore(SaveLoadVersion::UniqueDepotNames)) depot->town = reinterpret_cast<Town *>(static_cast<size_t>(_town_index.base()));
 		}
 	}
 
@@ -61,7 +61,7 @@ struct DEPTChunkHandler : ChunkHandler {
 	{
 		for (Depot *depot : Depot::Iterate()) {
 			SlObject(depot, _depot_desc);
-			if (IsSavegameVersionBefore(SLV_141)) depot->town = Town::Get((size_t)depot->town);
+			if (IsSavegameVersionBefore(SaveLoadVersion::UniqueDepotNames)) depot->town = Town::Get((size_t)depot->town);
 		}
 	}
 };

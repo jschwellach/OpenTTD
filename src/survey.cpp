@@ -15,14 +15,15 @@
 #include "network/network.h"
 #include "rev.h"
 #include "settings_type.h"
-#include "timer/timer_game_tick.h"
 #include "timer/timer_game_calendar.h"
 #include "timer/timer_game_economy.h"
 #include "3rdparty/fmt/ranges.h"
 
-#include "currency.h"
+#include "company_base.h"
+#include "currency_func.h"
 #include "fontcache.h"
 #include "language.h"
+#include "newgrf_config.h"
 
 #include "ai/ai_info.hpp"
 #include "game/game.hpp"
@@ -32,7 +33,6 @@
 #include "sound/sound_driver.hpp"
 #include "video/video_driver.hpp"
 
-#include "base_media_base.h"
 #include "base_media_graphics.h"
 #include "base_media_music.h"
 #include "base_media_sounds.h"
@@ -67,9 +67,9 @@
 #ifdef WITH_LZO
 #include <lzo/lzo1x.h>
 #endif
-#ifdef WITH_SDL2
-#include <SDL.h>
-#endif /* WITH_SDL2 */
+#ifdef WITH_SDL3
+#include <SDL3/SDL_version.h>
+#endif /* WITH_SDL3 */
 #ifdef WITH_ZLIB
 # include <zlib.h>
 #endif
@@ -189,12 +189,6 @@ void SurveyCompiler(nlohmann::json &survey)
 #if defined(_MSC_VER)
 	survey["name"] = "MSVC";
 	survey["version"] = _MSC_VER;
-#elif defined(__ICC) && defined(__GNUC__)
-	survey["name"] = "ICC";
-	survey["version"] = __ICC;
-#	if defined(__GNUC__)
-		survey["extra"] = fmt::format("GCC {}.{}.{} mode", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-#	endif
 #elif defined(__GNUC__)
 	survey["name"] = "GCC";
 	survey["version"] = fmt::format("{}.{}.{}", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -325,7 +319,7 @@ void SurveyCompanies(nlohmann::json &survey)
 			company["script"] = fmt::format("{}.{}", c->ai_info->GetName(), c->ai_info->GetVersion());
 		}
 
-		for (VehicleType type = VehicleType::Begin; type < VehicleType::CompanyEnd; type++) {
+		for (VehicleType type : EnumRange(VehicleType::CompanyEnd)) {
 			uint amount = c->group_all[type].num_vehicle;
 			company["vehicles"][_vehicle_type_to_string[type]] = amount;
 		}
@@ -364,7 +358,7 @@ void SurveyTimers(nlohmann::json &survey)
 void SurveyGrfs(nlohmann::json &survey)
 {
 	for (const auto &c : _grfconfig) {
-		auto grfid = fmt::format("{:08x}", std::byteswap(c->ident.grfid));
+		auto grfid = fmt::format("{}", FormatArrayAsHex(c->ident.grfid));
 		auto &grf = survey[std::move(grfid)];
 
 		grf["md5sum"] = FormatArrayAsHex(c->ident.md5sum);
@@ -445,10 +439,9 @@ void SurveyLibraries(nlohmann::json &survey)
 	survey["png"] = png_get_libpng_ver(nullptr);
 #endif /* WITH_PNG */
 
-#ifdef WITH_SDL2
-	SDL_version sdl2_v;
-	SDL_GetVersion(&sdl2_v);
-	survey["sdl2"] = fmt::format("{}.{}.{}", sdl2_v.major, sdl2_v.minor, sdl2_v.patch);
+#ifdef WITH_SDL3
+	int sdl_v = SDL_GetVersion();
+	survey["sdl3"] = fmt::format("{}.{}.{} ({})", SDL_VERSIONNUM_MAJOR(sdl_v), SDL_VERSIONNUM_MINOR(sdl_v), SDL_VERSIONNUM_MICRO(sdl_v), SDL_GetRevision());
 #endif
 
 #ifdef WITH_ZLIB

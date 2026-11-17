@@ -10,6 +10,7 @@
 #include "../stdafx.h"
 #include "../debug.h"
 #include "../newgrf_text.h"
+#include "../string_func.h"
 #include "../strings_func.h"
 #include "newgrf_bytereader.h"
 #include "newgrf_internal.h"
@@ -31,10 +32,10 @@ static void TranslateGRFStrings(ByteReader &buf)
 	 * W   offset    First text ID
 	 * S   text...   Zero-terminated strings */
 
-	uint32_t grfid = buf.ReadDWord();
+	GrfID grfid = buf.ReadLabel<GrfID>();
 	const GRFConfig *c = GetGRFConfig(grfid);
 	if (c == nullptr || (c->status != GRFStatus::Initialised && c->status != GRFStatus::Activated)) {
-		GrfMsg(7, "TranslateGRFStrings: GRFID 0x{:08X} unknown, skipping action 13", std::byteswap(grfid));
+		GrfMsg(Severity::Trace1, "TranslateGRFStrings: GRFID {} unknown, skipping action 13", FormatArrayAsHex(grfid));
 		return;
 	}
 
@@ -58,7 +59,7 @@ static void TranslateGRFStrings(ByteReader &buf)
 	uint16_t first_id  = buf.ReadWord();
 
 	if (!((first_id >= 0xD000 && first_id + num_strings <= 0xD400) || (first_id >= 0xD800 && first_id + num_strings <= 0xE000))) {
-		GrfMsg(7, "TranslateGRFStrings: Attempting to set out-of-range string IDs in action 13 (first: 0x{:04X}, number: 0x{:02X})", first_id, num_strings);
+		GrfMsg(Severity::Trace1, "TranslateGRFStrings: Attempting to set out-of-range string IDs in action 13 (first: 0x{:04X}, number: 0x{:02X})", first_id, num_strings);
 		return;
 	}
 
@@ -66,7 +67,7 @@ static void TranslateGRFStrings(ByteReader &buf)
 		std::string_view string = buf.ReadString();
 
 		if (string.empty()) {
-			GrfMsg(7, "TranslateGRFString: Ignoring empty string.");
+			GrfMsg(Severity::Trace1, "TranslateGRFString: Ignoring empty string.");
 			continue;
 		}
 

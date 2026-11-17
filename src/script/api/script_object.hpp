@@ -388,7 +388,7 @@ namespace ScriptObjectInternal {
 	static inline void SetClientIdHelper(T &data)
 	{
 		if constexpr (std::is_same_v<ClientID, T>) {
-			if (data == INVALID_CLIENT_ID) data = (ClientID)UINT32_MAX;
+			if (data == ClientID::Invalid) data = static_cast<ClientID>(UINT32_MAX);
 		}
 	}
 
@@ -435,13 +435,13 @@ bool ScriptObject::ScriptDoCommandHelper<Tcmd, Tret(*)(DoCommandFlags, Targs...)
 	if (!estimate_only && networking) ScriptObject::SetLastCommand(EndianBufferWriter<CommandDataBuffer>::FromValue(args), Tcmd);
 
 	/* Try to perform the command. */
-	Tret res = ::Command<Tcmd>::Unsafe((StringID)0, (!asynchronous && networking) ? ScriptObject::GetDoCommandCallback() : nullptr, false, estimate_only, tile, args);
+	Tret res = ::Command<Tcmd>::Unsafe(StringID{}, (!asynchronous && networking) ? ScriptObject::GetDoCommandCallback() : nullptr, false, estimate_only, tile, args);
 
 	if constexpr (std::is_same_v<Tret, CommandCost>) {
 		return ScriptObject::DoCommandProcessResult(res, callback, estimate_only, asynchronous);
 	} else {
 		ScriptObject::SetLastCommandResData(EndianBufferWriter<CommandDataBuffer>::FromValue(ScriptObjectInternal::RemoveFirstTupleElement(res)));
-		return ScriptObject::DoCommandProcessResult(std::get<0>(res), callback, estimate_only, asynchronous);
+		return ScriptObject::DoCommandProcessResult(ExtractCommandCost(res), callback, estimate_only, asynchronous);
 	}
 }
 

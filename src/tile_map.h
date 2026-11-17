@@ -26,7 +26,7 @@
  * @return the height of the tile
  * @pre tile < Map::Size()
  */
-[[debug_inline]] inline static uint TileHeight(Tile tile)
+[[debug_inline]] static inline uint TileHeight(Tile tile)
 {
 	assert(tile < Map::Size());
 	return tile.height();
@@ -93,7 +93,7 @@ inline uint TilePixelHeightOutsideMap(int x, int y)
  * @return The tiletype of the tile
  * @pre tile < Map::Size()
  */
-[[debug_inline]] inline static TileType GetTileType(Tile tile)
+[[debug_inline]] static inline TileType GetTileType(Tile tile)
 {
 	assert(tile < Map::Size());
 	return TileType(GB(tile.type(), 4, TILE_TYPE_BITS));
@@ -147,7 +147,7 @@ inline void SetTileType(Tile tile, TileType type)
  * @param type The type to check against
  * @return true If the type matches against the type of the tile
  */
-[[debug_inline]] inline static bool IsTileType(Tile tile, TileType type)
+[[debug_inline]] static inline bool IsTileType(Tile tile, TileType type)
 {
 	return GetTileType(tile) == type;
 }
@@ -181,7 +181,7 @@ inline Owner GetTileOwner(Tile tile)
 	assert(!IsTileType(tile, TileType::House));
 	assert(!IsTileType(tile, TileType::Industry));
 
-	return (Owner)GB(tile.m1(), 0, 5);
+	return static_cast<Owner>(GB(tile.m1(), 0, 5));
 }
 
 /**
@@ -278,7 +278,7 @@ bool IsTileFlat(TileIndex tile, int *h = nullptr);
  */
 inline Slope GetTileSlope(TileIndex tile)
 {
-	return std::get<0>(GetTileSlopeZ(tile));
+	return std::get<Slope>(GetTileSlopeZ(tile));
 }
 
 /**

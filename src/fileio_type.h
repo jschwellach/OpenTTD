@@ -10,7 +10,6 @@
 #ifndef FILEIO_TYPE_H
 #define FILEIO_TYPE_H
 
-#include "core/enum_type.hpp"
 #include "misc/autorelease.hpp"
 
 /** The different abstract types of files that the system knows about. */
@@ -127,8 +126,6 @@ enum class Searchpath : uint8_t {
 	AutodownloadPersonalDirXdg, ///< Search within the autodownload directory located in the personal directory (XDG variant).
 	End, ///< End marker.
 };
-
-DECLARE_INCREMENT_DECREMENT_OPERATORS(Searchpath)
 
 class FileHandle {
 public:

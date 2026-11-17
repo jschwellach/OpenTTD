@@ -1348,9 +1348,9 @@ STR_RIVERS_MODERATE                                             :Prosečno
 STR_RIVERS_LOT                                                  :Mnogo
 
 ###length 3
-STR_DISASTER_NONE                                               :nema
-STR_DISASTER_REDUCED                                            :redukovani
-STR_DISASTER_NORMAL                                             :normalni
+STR_BREAKDOWNS_NONE                                             :nema
+STR_BREAKDOWNS_REDUCED                                          :redukovani
+STR_BREAKDOWNS_NORMAL                                           :normalni
 
 ###length 4
 STR_SUBSIDY_X1_5                                                :x1.5
@@ -1678,6 +1678,8 @@ STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE                         :Skaliranje proi
 STR_CONFIG_SETTING_INDUSTRY_CARGO_SCALE_HELPTEXT                :Skaliraj proizvodnju tereta fabrika prema ovom procentu.
 STR_CONFIG_SETTING_CARGO_SCALE_VALUE                            :{NUM}%
 
+###setting-zero-is-special
+
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Automatska zamena kada vozilo ostari: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :Kada je omogućeno, vozilo blizu kraja života će se automatski zameniti kada su ispunjeni uslovi obnavljanja
 
@@ -1724,6 +1726,7 @@ STR_CONFIG_SETTING_TERRAIN_TYPE_HELPTEXT                        :(Samo TerraGene
 
 STR_CONFIG_SETTING_INDUSTRY_DENSITY                             :Gustina fabrika: {STRING}
 STR_CONFIG_SETTING_INDUSTRY_DENSITY_HELPTEXT                    :Odaberi koliko fabrika treba da se generiše i koji će se nivo održati tokom igre
+
 
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE                        :Najveće rastojanje od ivice za Rafinerije Nafte: {STRING}
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE_HELPTEXT               :Rafinerije nafte se grade samo u blizini ivice karte, to jest uz obalu za otočne karte
@@ -1902,12 +1905,7 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :Prikazivanje o�
 STR_CONFIG_SETTING_QUICKGOTO                                    :Brzo kreiranje naredbi vozila: {STRING}
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :Označi kursor naredbe "idi do" kod otvaranja prozora sa naredbama
 
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Podrazumevana vrsta pruge (posle učitavanja/nove igre): {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Vrsta železnice koja će biti odabrana prilikom pokretanja ili učitavanja igre. "Prva dostupna" odabira najstariju vrstu, "poslednja dostupna" odabire najnoviju vrstu, "najčešće korišćena" odabira vrstu koja je trenutno najviše u upotrebi
 ###length 3
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :Prva dostupna
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :Zadnja dostupna
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :Najčešće korišćena
 
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION                       :Prikazivati rezervisane pruge: {STRING}
 STR_CONFIG_SETTING_SHOW_TRACK_RESERVATION_HELPTEXT              :Prikaži rezervisane pruge u drugoj boji kako bi se olakšalo rešavanje problema sa vozovima koji ne žele ući u određenu deonicu puta
@@ -2030,8 +2028,8 @@ STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Prikazuje novin
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN                           :Otvaranje nove fabrike: {STRING}
 STR_CONFIG_SETTING_NEWS_INDUSTRY_OPEN_HELPTEXT                  :Prikazuje novinske naslove kada se otvori nova fabrika
 
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE                          :Zatvaranje fabrike: {STRING}
-STR_CONFIG_SETTING_NEWS_INDUSTRY_CLOSE_HELPTEXT                 :Prikazuje novinske naslove o zatvaranju fabrika
+
+
 
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES                         :Promene u privredi: {STRING}
 STR_CONFIG_SETTING_NEWS_ECONOMY_CHANGES_HELPTEXT                :Prikazuje novinske naslove o globalnim privrednim promenama
@@ -3176,11 +3174,7 @@ STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_QUERY                   :{YELLOW}Da li z
 # Industry cargoes window
 STR_INDUSTRY_CARGOES_INDUSTRY_CAPTION                           :{WHITE}Lanac snabdevanja - {STRING}
 STR_INDUSTRY_CARGOES_CARGO_CAPTION                              :{WHITE}Lanac proizvodnje - {STRING}
-STR_INDUSTRY_CARGOES_PRODUCERS                                  :{WHITE}Snabdevači
-STR_INDUSTRY_CARGOES_CUSTOMERS                                  :{WHITE}Potrošači
 STR_INDUSTRY_CARGOES_HOUSES                                     :{WHITE}Domaćinstva
-STR_INDUSTRY_CARGOES_INDUSTRY_TOOLTIP                           :{BLACK}Klikom na fabriku prikazuju se njegovi snabdevači i potrošači
-STR_INDUSTRY_CARGOES_CARGO_TOOLTIP                              :{BLACK}{STRING}{}Klikom na teret prikazuju se njegovi snabdevači i potrošači
 STR_INDUSTRY_DISPLAY_CHAIN                                      :{BLACK}Lanac
 STR_INDUSTRY_DISPLAY_CHAIN_TOOLTIP                              :{BLACK}Prikazuje lanac snabdevanja fabrika
 STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP                            :{BLACK}Obeleži na karti
@@ -3805,6 +3799,7 @@ STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Klikom na cilj premešta se glavni pogled na fabriku/naselje/pločicu. Ctrl+klik otvara novi pogled na lokaciju fabrike/naselja/pločice
 
 # Goal question window
+###length 4
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :{BLACK}Pitanje
 STR_GOAL_QUESTION_CAPTION_INFORMATION                           :{BLACK}Obaveštenje
 STR_GOAL_QUESTION_CAPTION_WARNING                               :{BLACK}Upozorenje
@@ -4555,9 +4550,7 @@ STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD                 :{BLACK}Profit t
 STR_VEHICLE_INFO_PROFIT_THIS_PERIOD_LAST_PERIOD_MIN_PERFORMANCE :{BLACK}Profit trenutnog perioda: {LTBLUE}{CURRENCY_LONG} (protekli period: {CURRENCY_LONG}) {BLACK}Min. performanse: {LTBLUE}{POWER_TO_WEIGHT}
 
 STR_VEHICLE_INFO_BUILT_VALUE                                    :{LTBLUE}{ENGINE} {BLACK}Kupljen: {LTBLUE}{NUM}{BLACK} Vrednost: {LTBLUE}{CURRENCY_LONG}
-STR_VEHICLE_INFO_NO_CAPACITY                                    :{BLACK}Nosivost: {LTBLUE}Nula{STRING}
 STR_VEHICLE_INFO_CAPACITY                                       :{BLACK}Nosivost: {LTBLUE}{CARGO_LONG}{STRING}
-STR_VEHICLE_INFO_CAPACITY_MULT                                  :{BLACK}Nosivost: {LTBLUE}{CARGO_LONG}{STRING} (x{NUM})
 STR_VEHICLE_INFO_CAPACITY_CAPACITY                              :{BLACK}Nosivost: {LTBLUE}{CARGO_LONG}, {CARGO_LONG}{STRING}
 
 STR_VEHICLE_INFO_FEEDER_CARGO_VALUE                             :{BLACK}Zarada od transfera: {LTBLUE}{CURRENCY_LONG}
@@ -4583,22 +4576,18 @@ STR_QUERY_RENAME_AIRCRAFT_CAPTION                               :{WHITE}Naziv le
 STR_VEHICLE_DETAILS_TRAIN_ENGINE_BUILT_AND_VALUE                :{LTBLUE}{ENGINE}{BLACK}   Kupljen: {LTBLUE}{NUM}{BLACK} Vrednost: {LTBLUE}{CURRENCY_LONG}
 STR_VEHICLE_DETAILS_TRAIN_WAGON_VALUE                           :{LTBLUE}{ENGINE}{BLACK}   Vrednost: {LTBLUE}{CURRENCY_LONG}
 
+
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_TEXT                   :{BLACK}Ukupna nosivost ovog voza:
 STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY                        :{LTBLUE}{CARGO_LONG} ({CARGO_SHORT})
-STR_VEHICLE_DETAILS_TRAIN_TOTAL_CAPACITY_MULT                   :{LTBLUE}{CARGO_LONG} ({CARGO_SHORT}) (x{NUM})
+
 
 STR_VEHICLE_DETAILS_CARGO_EMPTY                                 :{LTBLUE}Prazno
 STR_VEHICLE_DETAILS_CARGO_FROM                                  :{LTBLUE}{CARGO_LONG} sa {STATION}
-STR_VEHICLE_DETAILS_CARGO_FROM_MULT                             :{LTBLUE}{CARGO_LONG} sa {STATION} (x{NUM})
 
 STR_VEHICLE_DETAIL_TAB_CARGO                                    :{BLACK}Teret
 STR_VEHICLE_DETAILS_TRAIN_CARGO_TOOLTIP                         :{BLACK}Prikazuje podatke o teretu koji se prevozi
 STR_VEHICLE_DETAIL_TAB_INFORMATION                              :{BLACK}Podaci
 STR_VEHICLE_DETAILS_TRAIN_INFORMATION_TOOLTIP                   :{BLACK}Prikazuje podatke o kompoziciji
-STR_VEHICLE_DETAIL_TAB_CAPACITIES                               :{BLACK}Nosivost
-STR_VEHICLE_DETAILS_TRAIN_CAPACITIES_TOOLTIP                    :{BLACK}Prikazuje nosivost svih vozila u kompoziciji
-STR_VEHICLE_DETAIL_TAB_TOTAL_CARGO                              :{BLACK}Ukupni teret
-STR_VEHICLE_DETAILS_TRAIN_TOTAL_CARGO_TOOLTIP                   :{BLACK}Prikazuje ukupnu nosivost voza, podeljenu po vrsti tereta
 
 STR_VEHICLE_DETAILS_TRAIN_ARTICULATED_RV_CAPACITY               :{BLACK}Nosivost: {LTBLUE}{STRING}
 

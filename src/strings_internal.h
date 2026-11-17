@@ -10,8 +10,7 @@
 #ifndef STRINGS_INTERNAL_H
 #define STRINGS_INTERNAL_H
 
-#include "strings_func.h"
-#include "string_func.h"
+#include "strings_type.h"
 #include "core/string_builder.hpp"
 #include "core/string_consumer.hpp"
 
@@ -227,7 +226,7 @@ std::string GetStringWithArgs(StringID string, StringParameters &args);
 /* Do not leak the StringBuilder to everywhere. */
 void GenerateTownNameString(StringBuilder &builder, size_t lang, uint32_t seed);
 void GetTownName(StringBuilder &builder, const struct Town *t);
-void GRFTownNameGenerate(StringBuilder &builder, uint32_t grfid, uint16_t gen, uint32_t seed);
+void GRFTownNameGenerate(StringBuilder &builder, GrfID grfid, uint16_t gen, uint32_t seed);
 
 char32_t RemapNewGRFStringControlCode(char32_t scc, StringConsumer &consumer);
 

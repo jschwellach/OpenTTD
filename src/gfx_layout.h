@@ -12,34 +12,63 @@
 
 #include "misc/lrucache.hpp"
 #include "fontcache.h"
-#include "gfx_func.h"
-#include "core/math_func.hpp"
 
 #include <string_view>
+
+/**
+ * Container with information about a font.
+ */
+class Font {
+public:
+	FontSize fontsize = FontSize::End; ///< The font size.
+	ExtendedTextColour colour = TextColour::Invalid; ///< The text colour.
+
+	/**
+	 * Compare with another instance of this class.
+	 * @return The std::strong_ordering of the comparison.
+	 */
+	constexpr auto operator<=>(const Font &) const = default;
+
+	/**
+	 * Get the font cache of this font.
+	 * @return The font cache.
+	 */
+	inline FontCache &GetFontCache() const { return *FontCache::Get(this->fontsize); }
+};
 
 /**
  * Text drawing parameters, which can change while drawing a line, but are kept between multiple parts
  * of the same text, e.g. on line breaks.
  */
-struct FontState {
-	FontSize fontsize;       ///< Current font size.
-	TextColour cur_colour;   ///< Current text colour.
-	std::vector<TextColour> colour_stack; ///< Stack of colours to assist with colour switching.
+class FontState : public Font {
+public:
+	std::vector<ExtendedTextColour> colour_stack; ///< Stack of colours to assist with colour switching.
 
-	FontState() : fontsize(FontSize::End), cur_colour(TC_INVALID) {}
-	FontState(TextColour colour, FontSize fontsize) : fontsize(fontsize), cur_colour(colour) {}
+	/** Create the font state with an invalid state. */
+	FontState() = default;
 
+	/**
+	 * Create the font state.
+	 * @param colour The colour of the font.
+	 * @param fontsize The size of the font.
+	 */
+	FontState(FontSize fontsize, ExtendedTextColour colour) : Font(fontsize, colour) {}
+
+	/**
+	 * Compare with another instance of this class.
+	 * @return The std::strong_ordering of the comparison.
+	 */
 	auto operator<=>(const FontState &) const = default;
 
 	/**
 	 * Switch to new colour \a c.
 	 * @param c New colour to use.
 	 */
-	inline void SetColour(TextColour c)
+	inline void SetColour(ExtendedTextColour c)
 	{
-		assert(((c & TC_COLOUR_MASK) >= TC_BLUE && (c & TC_COLOUR_MASK) <= TC_BLACK) || (c & TC_COLOUR_MASK) == TC_INVALID);
-		assert((c & (TC_COLOUR_MASK | TC_FLAGS_MASK)) == c);
-		if ((this->cur_colour & TC_FORCED) == 0) this->cur_colour = c;
+		assert((c.colour >= TextColour::Begin && c.colour < TextColour::End) || c.colour == TextColour::Invalid);
+		assert(!c.flags.Test(ExtendedTextColourFlag::IsPaletteColour));
+		if (!this->colour.flags.Test(ExtendedTextColourFlag::Forced)) this->colour = c;
 	}
 
 	/**
@@ -57,7 +86,7 @@ struct FontState {
 	 */
 	inline void PushColour()
 	{
-		colour_stack.push_back(this->cur_colour);
+		colour_stack.push_back(this->colour);
 	}
 
 	/**
@@ -81,29 +110,33 @@ template <typename T> struct std::hash<std::vector<T>> {
 	}
 };
 
+/** Instantiation of a hash for an ExtendedTextColour. */
+template <> struct std::hash<ExtendedTextColour> {
+	/**
+	 * Hash the text colour.
+	 * @param tc The colour to hash.
+	 * @return The hashed value.
+	 */
+	std::size_t operator()(const ExtendedTextColour &tc) const noexcept
+	{
+		size_t h1 = std::hash<TextColour>{}(tc.colour);
+		size_t h2 = std::hash<uint8_t>{}(tc.flags.base());
+		return h1 ^ (h2 << 1);
+	}
+};
+
 template <> struct std::hash<FontState> {
 	std::size_t operator()(const FontState &state) const noexcept
 	{
 		size_t h1 = std::hash<FontSize>{}(state.fontsize);
-		size_t h2 = std::hash<TextColour>{}(state.cur_colour);
-		size_t h3 = std::hash<std::vector<TextColour>>{}(state.colour_stack);
+		size_t h2 = std::hash<ExtendedTextColour>{}(state.colour);
+		size_t h3 = std::hash<std::vector<ExtendedTextColour>>{}(state.colour_stack);
 		return h1 ^ (h2 << 1) ^ (h3 << 2);
 	}
 };
 
-/**
- * Container with information about a font.
- */
-class Font {
-public:
-	FontCache *fc;     ///< The font we are using.
-	TextColour colour; ///< The colour this font has to be.
-
-	Font(FontSize size, TextColour colour);
-};
-
-/** Mapping from index to font. The pointer is owned by FontColourMap. */
-using FontMap = std::vector<std::pair<int, Font *>>;
+/** Mapping from index to font. */
+using FontMap = std::vector<std::pair<int, Font>>;
 
 /**
  * Interface to glue fallback and normal layouter into one.
@@ -120,13 +153,13 @@ public:
 		int16_t right; ///< Right-most position of glyph.
 		int16_t top; ///< Top-most position of glyph.
 
-		constexpr inline Position(int16_t left, int16_t right, int16_t top) : left(left), right(right), top(top) { }
+		constexpr Position(int16_t left, int16_t right, int16_t top) : left(left), right(right), top(top) { }
 
 		/**
 		 * Conversion from a single point to a Position.
 		 * @param pt The point to create the position for.
 		 */
-		constexpr inline Position(const Point &pt) : left(pt.x), right(pt.x), top(pt.y) { }
+		constexpr Position(const Point &pt) : left(pt.x), right(pt.x), top(pt.y) { }
 	};
 
 	/** Visual run contains data about the bit of text with the same font. */
@@ -139,7 +172,7 @@ public:
 		 * Get the font.
 		 * @return The font used for this run.
 		 */
-		virtual const Font *GetFont() const = 0;
+		virtual const Font &GetFont() const = 0;
 
 		/**
 		 * Get the number of glyphs.
@@ -278,11 +311,7 @@ private:
 
 	static LineCacheItem &GetCachedParagraphLayout(std::string_view str, const FontState &state);
 
-	using FontColourMap = std::map<TextColour, std::unique_ptr<Font>>;
-	static EnumIndexArray<FontColourMap, FontSize, FontSize::End> fonts; ///< The colour mapping of each of the fonts.
 public:
-	static Font *GetFont(FontSize size, TextColour colour);
-
 	Layouter(std::string_view str, int maxw = INT32_MAX, FontSize fontsize = FontSize::Normal);
 	Dimension GetBounds();
 	ParagraphLayouter::Position GetCharPosition(std::string_view::const_iterator ch) const;

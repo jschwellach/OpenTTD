@@ -18,7 +18,7 @@
 #include "industry_type.h"
 #include "linkgraph/linkgraph_type.h"
 #include "newgrf_storage.h"
-#include "bitmap_type.h"
+#include "tilearea_bitmap.h"
 
 static const uint8_t INITIAL_STATION_RATING = 175;
 static const uint8_t MAX_STATION_RATING = 255;
@@ -207,6 +207,8 @@ struct GoodsEntry {
 		 */
 		AcceptedBigtick = 5,
 	};
+
+	/** Bitset of \c State elements. */
 	using States = EnumBitSet<State, uint8_t>;
 
 	struct GoodsEntryData {
@@ -374,7 +376,7 @@ struct Airport : public TileArea {
 	AirportBlocks blocks{}; ///< stores which blocks on the airport are taken. was 16 bit earlier on, then 32
 	uint8_t type = 0; ///< Type of this airport, @see AirportTypes
 	uint8_t layout = 0; ///< Airport layout number.
-	Direction rotation = INVALID_DIR; ///< How this airport is rotated.
+	Direction rotation = Direction::Invalid; ///< How this airport is rotated.
 
 	PersistentStorage *psa = nullptr; ///< Persistent storage for NewGRF airports.
 
@@ -421,13 +423,13 @@ struct Airport : public TileArea {
 	{
 		const AirportSpec *as = this->GetSpec();
 		switch (this->rotation) {
-			case DIR_N: return this->tile + ToTileIndexDiff(tidc);
+			case Direction::N: return this->tile + ToTileIndexDiff(tidc);
 
-			case DIR_E: return this->tile + TileDiffXY(tidc.y, as->size_x - 1 - tidc.x);
+			case Direction::E: return this->tile + TileDiffXY(tidc.y, as->size_x - 1 - tidc.x);
 
-			case DIR_S: return this->tile + TileDiffXY(as->size_x - 1 - tidc.x, as->size_y - 1 - tidc.y);
+			case Direction::S: return this->tile + TileDiffXY(as->size_x - 1 - tidc.x, as->size_y - 1 - tidc.y);
 
-			case DIR_W: return this->tile + TileDiffXY(as->size_y - 1 - tidc.y, tidc.x);
+			case Direction::W: return this->tile + TileDiffXY(as->size_y - 1 - tidc.y, tidc.x);
 
 			default: NOT_REACHED();
 		}
@@ -546,7 +548,7 @@ public:
 
 	BitmapTileArea catchment_tiles{}; ///< NOSAVE: Set of individual tiles covered by catchment area
 
-	StationHadVehicleOfType had_vehicle_of_type{};
+	StationVehicleTypes had_vehicle_of_type{};
 
 	uint8_t time_since_load = 0;
 	uint8_t time_since_unload = 0;
@@ -578,7 +580,6 @@ public:
 	static void RecomputeCatchmentForAll();
 
 	uint GetCatchmentRadius() const;
-	Rect GetCatchmentRect() const;
 	bool CatchmentCoversTown(TownID t) const;
 	void AddIndustryToDeliver(Industry *ind, TileIndex tile);
 	void RemoveIndustryToDeliver(Industry *ind);
@@ -586,7 +587,7 @@ public:
 
 	inline bool TileIsInCatchment(TileIndex tile) const
 	{
-		return this->catchment_tiles.HasTile(tile);
+		return this->catchment_tiles.Contains(tile);
 	}
 
 	inline bool TileBelongsToRailStation(TileIndex tile) const override
@@ -607,36 +608,6 @@ public:
 	uint32_t GetNewGRFVariable(const ResolverObject &object, uint8_t variable, uint8_t parameter, bool &available) const override;
 
 	TileArea GetTileArea(StationType type) const override;
-};
-
-/** Iterator to iterate over all tiles belonging to an airport. */
-class AirportTileIterator : public OrthogonalTileIterator {
-private:
-	const Station *st = nullptr; ///< The station the airport is a part of.
-
-public:
-	/**
-	 * Construct the iterator.
-	 * @param st Station the airport is part of.
-	 */
-	AirportTileIterator(const Station *st) : OrthogonalTileIterator(st->airport), st(st)
-	{
-		if (!st->TileBelongsToAirport(this->tile)) ++(*this);
-	}
-
-	inline TileIterator& operator ++() override
-	{
-		this->OrthogonalTileIterator::operator++();
-		while (this->tile != INVALID_TILE && !st->TileBelongsToAirport(this->tile)) {
-			this->OrthogonalTileIterator::operator++();
-		}
-		return *this;
-	}
-
-	std::unique_ptr<TileIterator> Clone() const override
-	{
-		return std::make_unique<AirportTileIterator>(*this);
-	}
 };
 
 void RebuildStationKdtree();

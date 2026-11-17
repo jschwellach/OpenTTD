@@ -17,60 +17,17 @@
 #include "newgrf_commons.h"
 #include "newgrf_spritegroup.h"
 #include "newgrf_town.h"
-#include "tilearea_type.h"
 
-/** Copy from station_map.h */
-typedef uint8_t StationGfx;
+/** Airport graphics tile. */
+using AirportGfx = uint16_t;
+
+/** Sentinel marker in airport layout to perform a clear tile check. */
+static constexpr AirportGfx AIRPORTGFX_CLEARTILE_SPECIALCHECK = UINT16_MAX;
 
 /** Tile-offset / AirportTileID pair. */
 struct AirportTileTable {
 	TileIndexDiffC ti; ///< Tile offset from  the top-most airport tile.
-	StationGfx gfx; ///< AirportTile to use for this tile.
-};
-
-/** Iterator to iterate over all tiles belonging to an airport spec. */
-class AirportTileTableIterator : public TileIterator {
-private:
-	std::span<const AirportTileTable> att; ///< The offsets.
-	TileIndex base_tile; ///< The tile we base the offsets off.
-	std::span<const AirportTileTable>::iterator iter;
-
-public:
-	/**
-	 * Construct the iterator.
-	 * @param att The TileTable we want to iterate over.
-	 * @param base_tile The basetile for all offsets.
-	 */
-	AirportTileTableIterator(std::span<const AirportTileTable> att, TileIndex base_tile)
-		: TileIterator(base_tile + ToTileIndexDiff(att.front().ti))
-		, att(att), base_tile(base_tile), iter(att.begin())
-	{
-	}
-
-	inline TileIterator& operator ++() override
-	{
-		++this->iter;
-		if (this->iter == std::end(att)) {
-			this->tile = INVALID_TILE;
-		} else {
-			this->tile = this->base_tile + ToTileIndexDiff(this->iter->ti);
-		}
-		return *this;
-	}
-
-	/**
-	 * Get the StationGfx for the current tile.
-	 * @return The identifier of the graphics for this tile.
-	 */
-	StationGfx GetStationGfx() const
-	{
-		return this->iter->gfx;
-	}
-
-	std::unique_ptr<TileIterator> Clone() const override
-	{
-		return std::make_unique<AirportTileTableIterator>(*this);
-	}
+	AirportGfx gfx; ///< AirportTile to use for this tile.
 };
 
 /** Class IDs for airports. */
@@ -190,11 +147,11 @@ struct AirportResolverObject : public ResolverObject {
 
 	TownScopeResolver *GetTown();
 
-	ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, uint8_t relative = 0) override
+	ScopeResolver *GetScope(VarSpriteGroupScope scope = VarSpriteGroupScope::Self, uint8_t relative = 0) override
 	{
 		switch (scope) {
-			case VSG_SCOPE_SELF: return &this->airport_scope;
-			case VSG_SCOPE_PARENT:
+			case VarSpriteGroupScope::Self: return &this->airport_scope;
+			case VarSpriteGroupScope::Parent:
 			{
 				TownScopeResolver *tsr = this->GetTown();
 				if (tsr != nullptr) return tsr;

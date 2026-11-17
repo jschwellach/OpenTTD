@@ -10,7 +10,6 @@
 #include "stdafx.h"
 #include "openttd.h"
 #include "command_func.h"
-#include "economy_func.h"
 #include "window_func.h"
 #include "textbuf_gui.h"
 #include "network/network.h"
@@ -21,7 +20,6 @@
 #include "company_base.h"
 #include "tile_map.h"
 #include "texteff.hpp"
-#include "core/backup_type.hpp"
 #include "misc_cmd.h"
 #include "video/video_driver.hpp"
 
@@ -212,8 +210,8 @@ CommandCost CmdPause(DoCommandFlags flags, PauseMode mode, bool pause)
 			VideoDriver::GetInstance()->SetScreensaverInhibited(_pause_mode.None());
 		}
 
-		SetWindowDirty(WC_STATUS_BAR, 0);
-		SetWindowDirty(WC_MAIN_TOOLBAR, 0);
+		SetWindowDirty(WindowClass::Statusbar, 0);
+		SetWindowDirty(WindowClass::MainToolbar, 0);
 	}
 	return CommandCost();
 }
@@ -253,6 +251,6 @@ CommandCost CmdChangeBankBalance(DoCommandFlags flags, TileIndex tile, Money del
 	}
 
 	/* This command doesn't cost anything for deity. */
-	CommandCost zero_cost(expenses_type, (Money)0);
+	CommandCost zero_cost(expenses_type);
 	return zero_cost;
 }

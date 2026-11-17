@@ -10,29 +10,29 @@
 #include "../stdafx.h"
 
 #include "saveload.h"
+#include "saveload_func.h"
 #include "compat/signs_sl_compat.h"
 
 #include "../signs_base.h"
-#include "../fios.h"
 
 #include "../safeguards.h"
 
 /** Description of a sign within the savegame. */
 static const SaveLoad _sign_desc[] = {
-	SLE_CONDVAR(Sign, name, SLE_NAME, SL_MIN_VERSION, SLV_84),
-	SLE_CONDSSTR(Sign, name, SLE_STR | SLF_ALLOW_CONTROL, SLV_84, SL_MAX_VERSION),
-	SLE_CONDVAR(Sign, x, SLE_FILE_I16 | SLE_VAR_I32, SL_MIN_VERSION, SLV_5),
-	SLE_CONDVAR(Sign, y, SLE_FILE_I16 | SLE_VAR_I32, SL_MIN_VERSION, SLV_5),
-	SLE_CONDVAR(Sign, x, SLE_INT32, SLV_5, SL_MAX_VERSION),
-	SLE_CONDVAR(Sign, y, SLE_INT32, SLV_5, SL_MAX_VERSION),
-	SLE_CONDVAR(Sign, owner, SLE_UINT8, SLV_6, SL_MAX_VERSION),
-	SLE_CONDVAR(Sign, z, SLE_FILE_U8  | SLE_VAR_I32, SL_MIN_VERSION, SLV_164),
-	SLE_CONDVAR(Sign, z, SLE_INT32, SLV_164, SL_MAX_VERSION),
-	SLE_CONDVAR(Sign, text_colour, SLE_UINT8, SLV_SIGN_TEXT_COLOURS, SL_MAX_VERSION),
+	SaveLoad::Variable<VarFileType::StringID>("name", SLE_OBJECT_ADDRESS(Sign, name), SaveLoadVersion::MinVersion, SaveLoadVersion::ReplaceCustomNameArray),
+	SaveLoad::String("name", SLE_OBJECT_ADDRESS(Sign, name), StringValidationSetting::AllowControlCode, SaveLoadVersion::ReplaceCustomNameArray),
+	SaveLoad::Variable<VarFileType::I16>("x", SLE_OBJECT_ADDRESS(Sign, x), SaveLoadVersion::MinVersion, SaveLoadVersion::BigMap),
+	SaveLoad::Variable<VarFileType::I16>("y", SLE_OBJECT_ADDRESS(Sign, y), SaveLoadVersion::MinVersion, SaveLoadVersion::BigMap),
+	SaveLoad::Variable<VarFileType::I32>("x", SLE_OBJECT_ADDRESS(Sign, x), SaveLoadVersion::BigMap),
+	SaveLoad::Variable<VarFileType::I32>("y", SLE_OBJECT_ADDRESS(Sign, y), SaveLoadVersion::BigMap),
+	SaveLoad::Variable<VarFileType::U8>("owner", SLE_OBJECT_ADDRESS(Sign, owner), SaveLoadVersion::MultipleRoadStops),
+	SaveLoad::Variable<VarFileType::U8>("z", SLE_OBJECT_ADDRESS(Sign, z), SaveLoadVersion::MinVersion, SaveLoadVersion::VehicleCentreAndZPos),
+	SaveLoad::Variable<VarFileType::I32>("z", SLE_OBJECT_ADDRESS(Sign, z), SaveLoadVersion::VehicleCentreAndZPos),
+	SaveLoad::Variable<VarFileType::U8>("text_colour", SLE_OBJECT_ADDRESS(Sign, text_colour), SaveLoadVersion::SignTextColours),
 };
 
 struct SIGNChunkHandler : ChunkHandler {
-	SIGNChunkHandler() : ChunkHandler('SIGN', CH_TABLE) {}
+	SIGNChunkHandler() : ChunkHandler("SIGN", ChunkType::Table) {}
 
 	void Save() const override
 	{
@@ -58,12 +58,12 @@ struct SIGNChunkHandler : ChunkHandler {
 			 *  - we can't use IsValidCompany() now, so this is fixed in AfterLoadGame()
 			 * All signs that were saved are valid (including those with just 'Sign' and INVALID_OWNER).
 			 *  - so set owner to OWNER_NONE if needed (signs from pre-version 6.1 would be lost) */
-			if (IsSavegameVersionBefore(SLV_6, 1) || (IsSavegameVersionBefore(SLV_83) && si->owner == INVALID_OWNER)) {
+			if (IsSavegameVersionBefore(SaveLoadVersion::MultipleRoadStops, 1) || (IsSavegameVersionBefore(SaveLoadVersion::DepotWaterOwners) && si->owner == INVALID_OWNER)) {
 				si->owner = OWNER_NONE;
 			}
 
 			/* Signs placed in scenario editor shall now be OWNER_DEITY */
-			if (IsSavegameVersionBefore(SLV_171) && si->owner == OWNER_NONE && _file_to_saveload.ftype.abstract == AbstractFileType::Scenario) {
+			if (IsSavegameVersionBefore(SaveLoadVersion::ScenarioDeitySigns) && si->owner == OWNER_NONE && _file_to_saveload.ftype.abstract == AbstractFileType::Scenario) {
 				si->owner = OWNER_DEITY;
 			}
 		}

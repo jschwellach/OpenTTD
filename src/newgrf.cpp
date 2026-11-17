@@ -16,11 +16,12 @@
 #include "engine_func.h"
 #include "engine_base.h"
 #include "bridge.h"
+#include "string_func.h"
 #include "town.h"
 #include "newgrf_engine.h"
 #include "newgrf_text.h"
 #include "spritecache.h"
-#include "currency.h"
+#include "currency_func.h"
 #include "landscape.h"
 #include "newgrf_badge.h"
 #include "newgrf_badge_config.h"
@@ -36,7 +37,6 @@
 #include "newgrf_object.h"
 #include "network/core/config.h"
 #include "smallmap_gui.h"
-#include "genworld.h"
 #include "error_func.h"
 #include "vehicle_base.h"
 #include "road.h"
@@ -80,7 +80,7 @@ TypedIndexContainer<std::vector<GRFTempEngineData>, EngineID> _gted;  ///< Tempo
 
 /**
  * Debug() function dedicated to newGRF debugging messages
- * Function is essentially the same as Debug(grf, severity, ...) with the
+ * Function is essentially the same as Debug(Facility::Grf, severity, ...) with the
  * addition of file:line information when parsing grf files.
  * @note for the above reason(s) GrfMsg() should ONLY be used for
  * loading/parsing grf files, not for runtime debug messages as there
@@ -88,12 +88,12 @@ TypedIndexContainer<std::vector<GRFTempEngineData>, EngineID> _gted;  ///< Tempo
  * @param severity debugging severity level, see debug.h
  * @param msg the message
  */
-void GrfMsgI(int severity, const std::string &msg)
+void GrfMsgI(Severity severity, const std::string &msg)
 {
 	if (_cur_gps.grfconfig == nullptr) {
-		Debug(grf, severity, "{}", msg);
+		Debug(Facility::Grf, severity, "{}", msg);
 	} else {
-		Debug(grf, severity, "[{}:{}] {}", _cur_gps.grfconfig->filename, _cur_gps.nfo_line, msg);
+		Debug(Facility::Grf, severity, "[{}:{}] {}", _cur_gps.grfconfig->filename, _cur_gps.nfo_line, msg);
 	}
 }
 
@@ -102,7 +102,7 @@ void GrfMsgI(int severity, const std::string &msg)
  * @param grfid The grfID to obtain the file for
  * @return The file.
  */
-GRFFile *GetFileByGRFID(uint32_t grfid)
+GRFFile *GetFileByGRFID(GrfID grfid)
 {
 	auto it = std::ranges::find(_grf_files, grfid, &GRFFile::grfid);
 	if (it != std::end(_grf_files)) return &*it;
@@ -175,21 +175,21 @@ void DisableStaticNewGRFInfluencingNonStaticNewGRFs(GRFConfig &c)
 	error->data = _cur_gps.grfconfig->GetName();
 }
 
-static std::map<uint32_t, uint32_t> _grf_id_overrides;
+static std::map<GrfID, GrfID> _grf_id_overrides;
 
 /**
  * Set the override for a NewGRF
  * @param source_grfid The grfID which wants to override another NewGRF.
  * @param target_grfid The grfID which is being overridden.
  */
-void SetNewGRFOverride(uint32_t source_grfid, uint32_t target_grfid)
+void SetNewGRFOverride(GrfID source_grfid, GrfID target_grfid)
 {
-	if (target_grfid == 0) {
+	if (target_grfid.Empty()) {
 		_grf_id_overrides.erase(source_grfid);
-		GrfMsg(5, "SetNewGRFOverride: Removed override of 0x{:X}", std::byteswap(source_grfid));
+		GrfMsg(Severity::Debug1, "SetNewGRFOverride: Removed override of {}", FormatArrayAsHex(source_grfid));
 	} else {
 		_grf_id_overrides[source_grfid] = target_grfid;
-		GrfMsg(5, "SetNewGRFOverride: Added override of 0x{:X} to 0x{:X}", std::byteswap(source_grfid), std::byteswap(target_grfid));
+		GrfMsg(Severity::Debug1, "SetNewGRFOverride: Added override of {} to {}", FormatArrayAsHex(source_grfid), FormatArrayAsHex(target_grfid));
 	}
 }
 
@@ -219,7 +219,7 @@ Engine *GetNewEngine(const GRFFile *file, VehicleType type, uint16_t internal_id
 {
 	/* Hack for add-on GRFs that need to modify another GRF's engines. This lets
 	 * them use the same engine slots. */
-	uint32_t scope_grfid = INVALID_GRFID; // If not using dynamic_engines, all newgrfs share their ID range
+	GrfID scope_grfid = INVALID_GRFID; // If not using dynamic_engines, all newgrfs share their ID range
 	if (_settings_game.vehicle.dynamic_engines) {
 		/* If dynamic_engies is enabled, there can be multiple independent ID ranges. */
 		scope_grfid = file->grfid;
@@ -227,9 +227,9 @@ Engine *GetNewEngine(const GRFFile *file, VehicleType type, uint16_t internal_id
 			scope_grfid = it->second;
 			const GRFFile *grf_match = GetFileByGRFID(scope_grfid);
 			if (grf_match == nullptr) {
-				GrfMsg(5, "Tried mapping from GRFID {:x} to {:x} but target is not loaded", std::byteswap(file->grfid), std::byteswap(scope_grfid));
+				GrfMsg(Severity::Debug1, "Tried mapping from GRFID {} to {} but target is not loaded", FormatArrayAsHex(file->grfid), FormatArrayAsHex(scope_grfid));
 			} else {
-				GrfMsg(5, "Mapping from GRFID {:x} to {:x}", std::byteswap(file->grfid), std::byteswap(scope_grfid));
+				GrfMsg(Severity::Debug1, "Mapping from GRFID {} to {}", FormatArrayAsHex(file->grfid), FormatArrayAsHex(scope_grfid));
 			}
 		}
 
@@ -251,7 +251,7 @@ Engine *GetNewEngine(const GRFFile *file, VehicleType type, uint16_t internal_id
 
 		if (!e->grf_prop.HasGrfFile()) {
 			e->grf_prop.SetGRFFile(file);
-			GrfMsg(5, "Replaced engine at index {} for GRFID {:x}, type {}, index {}", e->index, std::byteswap(file->grfid), type, internal_id);
+			GrfMsg(Severity::Debug1, "Replaced engine at index {} for GRFID {}, type {}, index {}", e->index, FormatArrayAsHex(file->grfid), type, internal_id);
 		}
 
 		return e;
@@ -260,7 +260,7 @@ Engine *GetNewEngine(const GRFFile *file, VehicleType type, uint16_t internal_id
 	if (static_access) return nullptr;
 
 	if (!Engine::CanAllocateItem()) {
-		GrfMsg(0, "Can't allocate any more engines");
+		GrfMsg(Severity::Critical, "Can't allocate any more engines");
 		return nullptr;
 	}
 
@@ -282,7 +282,7 @@ Engine *GetNewEngine(const GRFFile *file, VehicleType type, uint16_t internal_id
 		for (RailType rt : e->VehInfo<RailVehicleInfo>().railtypes) _gted[e->index].railtypelabels.push_back(GetRailTypeInfo(rt)->label);
 	}
 
-	GrfMsg(5, "Created new engine at index {} for GRFID {:x}, type {}, index {}", e->index, std::byteswap(file->grfid), type, internal_id);
+	GrfMsg(Severity::Debug1, "Created new engine at index {} for GRFID {}, type {}, index {}", e->index, FormatArrayAsHex(file->grfid), type, internal_id);
 
 	return e;
 }
@@ -299,7 +299,7 @@ Engine *GetNewEngine(const GRFFile *file, VehicleType type, uint16_t internal_id
  */
 EngineID GetNewEngineID(const GRFFile *file, VehicleType type, uint16_t internal_id)
 {
-	uint32_t scope_grfid = INVALID_GRFID; // If not using dynamic_engines, all newgrfs share their ID range
+	GrfID scope_grfid = INVALID_GRFID; // If not using dynamic_engines, all newgrfs share their ID range
 	if (_settings_game.vehicle.dynamic_engines) {
 		scope_grfid = file->grfid;
 		if (auto it = _grf_id_overrides.find(file->grfid); it != std::end(_grf_id_overrides)) {
@@ -347,7 +347,7 @@ void ConvertTTDBasePrice(uint32_t base_pointer, std::string_view error_location,
 	static const uint32_t size  = 6;      ///< Size of each base price record
 
 	if (base_pointer < start || (base_pointer - start) % size != 0 || (base_pointer - start) / size >= to_underlying(Price::End)) {
-		GrfMsg(1, "{}: Unsupported running cost base 0x{:04X}, ignoring", error_location, base_pointer);
+		GrfMsg(Severity::Error, "{}: Unsupported running cost base 0x{:04X}, ignoring", error_location, base_pointer);
 		return;
 	}
 
@@ -360,9 +360,8 @@ void ConvertTTDBasePrice(uint32_t base_pointer, std::string_view error_location,
  * @param language_id The (NewGRF) language ID to get the map for.
  * @return The LanguageMap, or nullptr if it couldn't be found.
  */
-/* static */ const LanguageMap *LanguageMap::GetLanguageMap(uint32_t grfid, uint8_t language_id)
+/* static */ const LanguageMap *LanguageMap::GetLanguageMap(GrfID grfid, GRFLanguage language_id)
 {
-	/* LanguageID "MAX_LANG", i.e. 7F is any. This language can't have a gender/case mapping, but has to be handled gracefully. */
 	const GRFFile *grffile = GetFileByGRFID(grfid);
 	if (grffile == nullptr) return nullptr;
 
@@ -492,10 +491,10 @@ void ResetNewGRFData()
 	/* Reset misc GRF features and train list display variables */
 	_misc_grf_features = {};
 
-	_loaded_newgrf_features.has_2CC           = false;
-	_loaded_newgrf_features.used_liveries     = 1 << LS_DEFAULT;
-	_loaded_newgrf_features.shore             = ShoreReplacement::None;
-	_loaded_newgrf_features.tram              = TramDepotReplacement::None;
+	_loaded_newgrf_features.has_2CC = false;
+	_loaded_newgrf_features.used_liveries = LiveryScheme::Default;
+	_loaded_newgrf_features.shore = ShoreReplacement::None;
+	_loaded_newgrf_features.tram = TramDepotReplacement::None;
 
 	/* Clear all GRF overrides */
 	_grf_id_overrides.clear();
@@ -503,6 +502,7 @@ void ResetNewGRFData()
 	InitializeSoundPool();
 	_spritegroup_pool.CleanPool();
 	ResetCallbacks(false);
+	ResetUnhandledVariableWarnings();
 }
 
 /**
@@ -653,7 +653,7 @@ static CargoLabel GetActiveCargoLabel(const std::variant<CargoLabel, MixedCargoT
 static void CalculateRefitMasks()
 {
 	CargoTypes original_known_cargoes{};
-	for (CargoType cargo_type{}; cargo_type != NUM_CARGO; ++cargo_type) {
+	for (CargoType cargo_type : EnumRange(NUM_CARGO)) {
 		if (IsDefaultCargo(cargo_type)) original_known_cargoes.Set(cargo_type);
 	}
 
@@ -702,28 +702,22 @@ static void CalculateRefitMasks()
 					_gted[engine].cargo_disallowed = {CargoClass::Liquid};
 				} else if (e->type == VehicleType::Ship) {
 					CargoLabel label = GetActiveCargoLabel(ei->cargo_label);
-					switch (label.base()) {
-						case CT_PASSENGERS.base():
-							/* Ferries */
-							_gted[engine].cargo_allowed = {CargoClass::Passengers};
-							_gted[engine].cargo_disallowed = {};
-							break;
-						case CT_OIL.base():
-							/* Tankers */
-							_gted[engine].cargo_allowed = {CargoClass::Liquid};
-							_gted[engine].cargo_disallowed = {};
-							break;
-						default:
-							/* Cargo ships */
-							if (_settings_game.game_creation.landscape == LandscapeType::Toyland) {
-								/* No tanker in toyland :( */
-								_gted[engine].cargo_allowed = {CargoClass::Mail, CargoClass::Armoured, CargoClass::Express, CargoClass::Bulk, CargoClass::PieceGoods, CargoClass::Liquid};
-								_gted[engine].cargo_disallowed = {CargoClass::Passengers};
-							} else {
-								_gted[engine].cargo_allowed = {CargoClass::Mail, CargoClass::Armoured, CargoClass::Express, CargoClass::Bulk, CargoClass::PieceGoods};
-								_gted[engine].cargo_disallowed = {CargoClass::Liquid, CargoClass::Passengers};
-							}
-							break;
+					if (label == CT_PASSENGERS) {
+						/* Ferries */
+						_gted[engine].cargo_allowed = {CargoClass::Passengers};
+						_gted[engine].cargo_disallowed = {};
+					} else if (label == CT_OIL) {
+						/* Tankers */
+						_gted[engine].cargo_allowed = {CargoClass::Liquid};
+						_gted[engine].cargo_disallowed = {};
+					} else if (_settings_game.game_creation.landscape == LandscapeType::Toyland) {
+						/* No tanker in toyland :( so include liquids in the cargo ships */
+						_gted[engine].cargo_allowed = {CargoClass::Mail, CargoClass::Armoured, CargoClass::Express, CargoClass::Bulk, CargoClass::PieceGoods, CargoClass::Liquid};
+						_gted[engine].cargo_disallowed = {CargoClass::Passengers};
+					} else {
+						/* Cargo ships */
+						_gted[engine].cargo_allowed = {CargoClass::Mail, CargoClass::Armoured, CargoClass::Express, CargoClass::Bulk, CargoClass::PieceGoods};
+						_gted[engine].cargo_disallowed = {CargoClass::Liquid, CargoClass::Passengers};
 					}
 					e->VehInfo<ShipVehicleInfo>().old_refittable = true;
 				} else if (e->type == VehicleType::Train && e->VehInfo<RailVehicleInfo>().railveh_type != RailVehicleType::Wagon) {
@@ -849,7 +843,7 @@ static void CalculateRefitMasks()
 /** Set to use the correct action0 properties for each canal feature */
 static void FinaliseCanals()
 {
-	for (uint i = 0; i < CF_END; i++) {
+	for (CanalFeature i : EnumRange(CanalFeature::End)) {
 		if (_water_feature[i].grffile != nullptr) {
 			_water_feature[i].callback_mask = _water_feature[i].grffile->canal_local_properties[i].callback_mask;
 			_water_feature[i].flags = _water_feature[i].grffile->canal_local_properties[i].flags;
@@ -888,23 +882,23 @@ static void FinaliseEngineArray()
 		/* Skip wagons, there livery is defined via the engine */
 		if (e->type != VehicleType::Train || e->VehInfo<RailVehicleInfo>().railveh_type != RailVehicleType::Wagon) {
 			LiveryScheme ls = GetEngineLiveryScheme(e->index, EngineID::Invalid(), nullptr);
-			SetBit(_loaded_newgrf_features.used_liveries, ls);
+			_loaded_newgrf_features.used_liveries.Set(ls);
 			/* Note: For ships and roadvehicles we assume that they cannot be refitted between passenger and freight */
 
 			if (e->type == VehicleType::Train) {
-				SetBit(_loaded_newgrf_features.used_liveries, LS_FREIGHT_WAGON);
+				_loaded_newgrf_features.used_liveries.Set(LiveryScheme::FreightWagon);
 				switch (ls) {
-					case LS_STEAM:
-					case LS_DIESEL:
-					case LS_ELECTRIC:
-					case LS_MONORAIL:
-					case LS_MAGLEV:
-						SetBit(_loaded_newgrf_features.used_liveries, LS_PASSENGER_WAGON_STEAM + ls - LS_STEAM);
+					case LiveryScheme::Steam:
+					case LiveryScheme::Diesel:
+					case LiveryScheme::Electric:
+					case LiveryScheme::Monorail:
+					case LiveryScheme::Maglev:
+						_loaded_newgrf_features.used_liveries.Set(LiveryScheme::PassengerWagonSteam + ls - LiveryScheme::Steam);
 						break;
 
-					case LS_DMU:
-					case LS_EMU:
-						SetBit(_loaded_newgrf_features.used_liveries, LS_PASSENGER_WAGON_DIESEL + ls - LS_DMU);
+					case LiveryScheme::DMU:
+					case LiveryScheme::EMU:
+						_loaded_newgrf_features.used_liveries.Set(LiveryScheme::PassengerWagonDiesel + ls - LiveryScheme::DMU);
 						break;
 
 					default: NOT_REACHED();
@@ -930,7 +924,7 @@ static void FinaliseEngineArray()
 			/* Engine looped back on itself, so clear the variant. */
 			e->info.variant_id = EngineID::Invalid();
 
-			GrfMsg(1, "FinaliseEngineArray: Variant of engine {:x} in '{}' loops back on itself", e->grf_prop.local_id, e->GetGRF()->filename);
+			GrfMsg(Severity::Error, "FinaliseEngineArray: Variant of engine {:x} in '{}' loops back on itself", e->grf_prop.local_id, e->GetGRF()->filename);
 			break;
 		}
 
@@ -946,10 +940,12 @@ void FinaliseCargoArray()
 	for (CargoSpec &cs : CargoSpec::array) {
 		if (cs.town_production_effect == TownProductionEffect::Invalid) {
 			/* Set default town production effect by cargo label. */
-			switch (cs.label.base()) {
-				case CT_PASSENGERS.base(): cs.town_production_effect = TownProductionEffect::Passengers; break;
-				case CT_MAIL.base():       cs.town_production_effect = TownProductionEffect::Mail; break;
-				default:                   cs.town_production_effect = TownProductionEffect::None; break;
+			if (cs.label == CT_PASSENGERS) {
+				cs.town_production_effect = TownProductionEffect::Passengers;
+			} else if (cs.label == CT_MAIL) {
+				cs.town_production_effect = TownProductionEffect::Mail;
+			} else {
+				cs.town_production_effect = TownProductionEffect::None;
 			}
 		}
 		if (!cs.IsValid()) {
@@ -979,7 +975,7 @@ static bool IsHouseSpecValid(HouseSpec &hs, const HouseSpec *next1, const HouseS
 				(next2 == nullptr || !next2->enabled || next2->building_flags.Any(BUILDING_HAS_1_TILE) ||
 				next3 == nullptr || !next3->enabled || next3->building_flags.Any(BUILDING_HAS_1_TILE)))) {
 		hs.enabled = false;
-		if (!filename.empty()) Debug(grf, 1, "FinaliseHouseArray: {} defines house {} as multitile, but no suitable tiles follow. Disabling house.", filename, hs.grf_prop.local_id);
+		if (!filename.empty()) Debug(Facility::Grf, Severity::Error, "FinaliseHouseArray: {} defines house {} as multitile, but no suitable tiles follow. Disabling house.", filename, hs.grf_prop.local_id);
 		return false;
 	}
 
@@ -989,7 +985,7 @@ static bool IsHouseSpecValid(HouseSpec &hs, const HouseSpec *next1, const HouseS
 	if ((hs.building_flags.Any(BUILDING_HAS_2_TILES) && next1->population != 0) ||
 			(hs.building_flags.Any(BUILDING_HAS_4_TILES) && (next2->population != 0 || next3->population != 0))) {
 		hs.enabled = false;
-		if (!filename.empty()) Debug(grf, 1, "FinaliseHouseArray: {} defines multitile house {} with non-zero population on additional tiles. Disabling house.", filename, hs.grf_prop.local_id);
+		if (!filename.empty()) Debug(Facility::Grf, Severity::Error, "FinaliseHouseArray: {} defines multitile house {} with non-zero population on additional tiles. Disabling house.", filename, hs.grf_prop.local_id);
 		return false;
 	}
 
@@ -997,14 +993,14 @@ static bool IsHouseSpecValid(HouseSpec &hs, const HouseSpec *next1, const HouseS
 	 * This check should only be done for NewGRF houses because grf_prop.subst_id is not set for original houses.*/
 	if (!filename.empty() && (hs.building_flags & BUILDING_HAS_1_TILE) != (HouseSpec::Get(hs.grf_prop.subst_id)->building_flags & BUILDING_HAS_1_TILE)) {
 		hs.enabled = false;
-		Debug(grf, 1, "FinaliseHouseArray: {} defines house {} with different house size then it's substitute type. Disabling house.", filename, hs.grf_prop.local_id);
+		Debug(Facility::Grf, Severity::Error, "FinaliseHouseArray: {} defines house {} with different house size then it's substitute type. Disabling house.", filename, hs.grf_prop.local_id);
 		return false;
 	}
 
 	/* Make sure that additional parts of multitile houses are not available. */
 	if (!hs.building_flags.Any(BUILDING_HAS_1_TILE) && hs.building_availability.Any(HZ_ZONE_ALL) && hs.building_availability.Any(HZ_CLIMATE_ALL)) {
 		hs.enabled = false;
-		if (!filename.empty()) Debug(grf, 1, "FinaliseHouseArray: {} defines house {} without a size but marked it as available. Disabling house.", filename, hs.grf_prop.local_id);
+		if (!filename.empty()) Debug(Facility::Grf, Severity::Error, "FinaliseHouseArray: {} defines house {} without a size but marked it as available. Disabling house.", filename, hs.grf_prop.local_id);
 		return false;
 	}
 
@@ -1242,9 +1238,9 @@ struct InvokeGrfActionHandler {
 	{
 		Invoker func = action < std::size(funcs) ? funcs[action] : nullptr;
 		if (func == nullptr) {
-			GrfMsg(7, "DecodeSpecialSprite: Skipping unknown action 0x{:02X}", action);
+			GrfMsg(Severity::Trace1, "DecodeSpecialSprite: Skipping unknown action 0x{:02X}", action);
 		} else {
-			GrfMsg(7, "DecodeSpecialSprite: Handling action 0x{:02X} in stage {}", action, stage);
+			GrfMsg(Severity::Trace1, "DecodeSpecialSprite: Handling action 0x{:02X} in stage {}", action, stage);
 			func(buf, stage);
 		}
 	}
@@ -1269,7 +1265,7 @@ static void DecodeSpecialSprite(ReusableBuffer<uint8_t> &allocator, uint num, Gr
 		/* Use the preloaded sprite data. */
 		buf = it->second.data();
 		assert(it->second.size() == num);
-		GrfMsg(7, "DecodeSpecialSprite: Using preloaded pseudo sprite data");
+		GrfMsg(Severity::Trace1, "DecodeSpecialSprite: Using preloaded pseudo sprite data");
 
 		/* Skip the real (original) content of this action. */
 		_cur_gps.file->SeekTo(num, SEEK_CUR);
@@ -1281,14 +1277,14 @@ static void DecodeSpecialSprite(ReusableBuffer<uint8_t> &allocator, uint num, Gr
 		uint8_t action = br.ReadByte();
 
 		if (action == 0xFF) {
-			GrfMsg(2, "DecodeSpecialSprite: Unexpected data block, skipping");
+			GrfMsg(Severity::Warning, "DecodeSpecialSprite: Unexpected data block, skipping");
 		} else if (action == 0xFE) {
-			GrfMsg(2, "DecodeSpecialSprite: Unexpected import block, skipping");
+			GrfMsg(Severity::Warning, "DecodeSpecialSprite: Unexpected import block, skipping");
 		} else {
 			InvokeGrfActionHandler::Invoke(action, stage, br);
 		}
 	} catch (...) {
-		GrfMsg(1, "DecodeSpecialSprite: Tried to read past end of pseudo-sprite data");
+		GrfMsg(Severity::Error, "DecodeSpecialSprite: Tried to read past end of pseudo-sprite data");
 		DisableGrf(STR_NEWGRF_ERROR_READ_BOUNDS);
 	}
 }
@@ -1304,11 +1300,11 @@ static void LoadNewGRFFileFromFile(GRFConfig &config, GrfLoadingStage stage, Spr
 	AutoRestoreBackup cur_file(_cur_gps.file, &file);
 	AutoRestoreBackup cur_config(_cur_gps.grfconfig, &config);
 
-	Debug(grf, 2, "LoadNewGRFFile: Reading NewGRF-file '{}'", config.filename);
+	Debug(Facility::Grf, Severity::Warning, "LoadNewGRFFile: Reading NewGRF-file '{}'", config.filename);
 
 	uint8_t grf_container_version = file.GetContainerVersion();
 	if (grf_container_version == 0) {
-		Debug(grf, 7, "LoadNewGRFFile: Custom .grf has invalid format");
+		Debug(Facility::Grf, Severity::Trace1, "LoadNewGRFFile: Custom .grf has invalid format");
 		return;
 	}
 
@@ -1325,7 +1321,7 @@ static void LoadNewGRFFileFromFile(GRFConfig &config, GrfLoadingStage stage, Spr
 		/* Read compression value. */
 		uint8_t compression = file.ReadByte();
 		if (compression != 0) {
-			Debug(grf, 7, "LoadNewGRFFile: Unsupported compression format");
+			Debug(Facility::Grf, Severity::Trace1, "LoadNewGRFFile: Unsupported compression format");
 			return;
 		}
 	}
@@ -1337,7 +1333,7 @@ static void LoadNewGRFFileFromFile(GRFConfig &config, GrfLoadingStage stage, Spr
 	if (num == 4 && file.ReadByte() == 0xFF) {
 		file.ReadDword();
 	} else {
-		Debug(grf, 7, "LoadNewGRFFile: Custom .grf has invalid format");
+		Debug(Facility::Grf, Severity::Trace1, "LoadNewGRFFile: Custom .grf has invalid format");
 		return;
 	}
 
@@ -1353,7 +1349,7 @@ static void LoadNewGRFFileFromFile(GRFConfig &config, GrfLoadingStage stage, Spr
 			if (_cur_gps.skip_sprites == 0) {
 				/* Limit the special sprites to 1 MiB. */
 				if (num > 1024 * 1024) {
-					GrfMsg(0, "LoadNewGRFFile: Unexpectedly large sprite, disabling");
+					GrfMsg(Severity::Critical, "LoadNewGRFFile: Unexpectedly large sprite, disabling");
 					DisableGrf(STR_NEWGRF_ERROR_UNEXPECTED_SPRITE);
 					break;
 				}
@@ -1369,7 +1365,7 @@ static void LoadNewGRFFileFromFile(GRFConfig &config, GrfLoadingStage stage, Spr
 			}
 		} else {
 			if (_cur_gps.skip_sprites == 0) {
-				GrfMsg(0, "LoadNewGRFFile: Unexpected sprite, disabling");
+				GrfMsg(Severity::Critical, "LoadNewGRFFile: Unexpected sprite, disabling");
 				DisableGrf(STR_NEWGRF_ERROR_UNEXPECTED_SPRITE);
 				break;
 			}
@@ -1495,7 +1491,7 @@ static void FinalisePriceBaseMultipliers()
 		GRFFile &source = _grf_files[i];
 		auto it = _grf_id_overrides.find(source.grfid);
 		if (it == std::end(_grf_id_overrides)) continue;
-		uint32_t override_grfid = it->second;
+		GrfID override_grfid = it->second;
 
 		auto dest = std::ranges::find(_grf_files, override_grfid, &GRFFile::grfid);
 		if (dest == std::end(_grf_files)) continue;
@@ -1514,10 +1510,10 @@ static void FinalisePriceBaseMultipliers()
 		source.grf_features.Set(features);
 		dest.grf_features.Set(features);
 
-		for (Price p = Price::Begin; p < Price::End; p++) {
+		for (Price p : EnumRange(Price::End)) {
 			/* No price defined -> nothing to do */
 			if (!features.Test(_price_base_specs[p].grf_feature) || source.price_base_multipliers[p] == INVALID_PRICE_MODIFIER) continue;
-			Debug(grf, 3, "'{}' overrides price base multiplier {} of '{}'", source.filename, p, dest.filename);
+			Debug(Facility::Grf, Severity::Notice, "'{}' overrides price base multiplier {} of '{}'", source.filename, p, dest.filename);
 			dest.price_base_multipliers[p] = source.price_base_multipliers[p];
 		}
 	}
@@ -1532,10 +1528,10 @@ static void FinalisePriceBaseMultipliers()
 		source.grf_features.Set(features);
 		dest.grf_features.Set(features);
 
-		for (Price p = Price::Begin; p < Price::End; p++) {
+		for (Price p : EnumRange(Price::End)) {
 			/* Already a price defined -> nothing to do */
 			if (!features.Test(_price_base_specs[p].grf_feature) || dest.price_base_multipliers[p] != INVALID_PRICE_MODIFIER) continue;
-			Debug(grf, 3, "Price base multiplier {} from '{}' propagated to '{}'", p, source.filename, dest.filename);
+			Debug(Facility::Grf, Severity::Notice, "Price base multiplier {} from '{}' propagated to '{}'", p, source.filename, dest.filename);
 			dest.price_base_multipliers[p] = source.price_base_multipliers[p];
 		}
 	}
@@ -1550,10 +1546,10 @@ static void FinalisePriceBaseMultipliers()
 		source.grf_features.Set(features);
 		dest.grf_features.Set(features);
 
-		for (Price p = Price::Begin; p < Price::End; p++) {
+		for (Price p : EnumRange(Price::End)) {
 			if (!features.Test(_price_base_specs[p].grf_feature)) continue;
 			if (source.price_base_multipliers[p] != dest.price_base_multipliers[p]) {
-				Debug(grf, 3, "Price base multiplier {} from '{}' propagated to '{}'", p, dest.filename, source.filename);
+				Debug(Facility::Grf, Severity::Notice, "Price base multiplier {} from '{}' propagated to '{}'", p, dest.filename, source.filename);
 			}
 			source.price_base_multipliers[p] = dest.price_base_multipliers[p];
 		}
@@ -1563,7 +1559,7 @@ static void FinalisePriceBaseMultipliers()
 	for (auto &file : _grf_files) {
 		if (file.grf_version >= 8) continue;
 		PriceMultipliers &price_base_multipliers = file.price_base_multipliers;
-		for (Price p = Price::Begin; p < Price::End; p++) {
+		for (Price p : EnumRange(Price::End)) {
 			Price fallback_price = _price_base_specs[p].fallback_price;
 			if (fallback_price != Price::Invalid && price_base_multipliers[p] == INVALID_PRICE_MODIFIER) {
 				/* No price multiplier has been set.
@@ -1576,7 +1572,7 @@ static void FinalisePriceBaseMultipliers()
 	/* Decide local/global scope of price base multipliers */
 	for (auto &file : _grf_files) {
 		PriceMultipliers &price_base_multipliers = file.price_base_multipliers;
-		for (Price p = Price::Begin; p < Price::End; p++) {
+		for (Price p : EnumRange(Price::End)) {
 			if (price_base_multipliers[p] == INVALID_PRICE_MODIFIER) {
 				/* No multiplier was set; set it to a neutral value */
 				price_base_multipliers[p] = 0;
@@ -1584,11 +1580,11 @@ static void FinalisePriceBaseMultipliers()
 				if (!file.grf_features.Test(_price_base_specs[p].grf_feature)) {
 					/* The grf does not define any objects of the feature,
 					 * so it must be a difficulty setting. Apply it globally */
-					Debug(grf, 3, "'{}' sets global price base multiplier {}", file.filename, p);
+					Debug(Facility::Grf, Severity::Notice, "'{}' sets global price base multiplier {}", file.filename, p);
 					SetPriceBaseMultiplier(p, price_base_multipliers[p]);
 					price_base_multipliers[p] = 0;
 				} else {
-					Debug(grf, 3, "'{}' sets local price base multiplier {}", file.filename, p);
+					Debug(Facility::Grf, Severity::Notice, "'{}' sets local price base multiplier {}", file.filename, p);
 				}
 			}
 		}
@@ -1609,7 +1605,7 @@ void AddBadgeToSpecs(T &specs, GrfSpecFeature feature, Badge &badge)
 static void FinaliseBadges()
 {
 	for (const auto &file : _grf_files) {
-		Badge *badge = GetBadgeByLabel(fmt::format("newgrf/{:08x}", std::byteswap(file.grfid)));
+		Badge *badge = GetBadgeByLabel(fmt::format("newgrf/{}", FormatArrayAsHex(file.grfid)));
 		if (badge == nullptr) continue;
 
 		for (Engine *e : Engine::Iterate()) {
@@ -1767,16 +1763,16 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 	 * so all NewGRFs are loaded equally. For this we use the
 	 * start date of the game and we set the counters, etc. to
 	 * 0 so they're the same too. */
-	TimerGameCalendar::Date date            = TimerGameCalendar::date;
-	TimerGameCalendar::Year year            = TimerGameCalendar::year;
-	TimerGameCalendar::DateFract date_fract = TimerGameCalendar::date_fract;
+	AutoRestoreBackup backup_date{TimerGameCalendar::date};
+	AutoRestoreBackup backup_year{TimerGameCalendar::year};
+	AutoRestoreBackup backup_date_fract{TimerGameCalendar::date_fract};
 
-	TimerGameEconomy::Date economy_date = TimerGameEconomy::date;
-	TimerGameEconomy::Year economy_year = TimerGameEconomy::year;
-	TimerGameEconomy::DateFract economy_date_fract = TimerGameEconomy::date_fract;
+	AutoRestoreBackup backup_economy_date{TimerGameEconomy::date};
+	AutoRestoreBackup backup_economy_year{TimerGameEconomy::year};
+	AutoRestoreBackup backup_economy_date_fract{TimerGameEconomy::date_fract};
 
-	uint64_t tick_counter  = TimerGameTick::counter;
-	uint8_t display_opt     = _display_opt;
+	AutoRestoreBackup backup_tick_counter{TimerGameTick::counter};
+	AutoRestoreBackup backup_display_opt{_display_opt};
 
 	if (_networking) {
 		TimerGameCalendar::year = _settings_game.game_creation.starting_year;
@@ -1788,7 +1784,7 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 		TimerGameEconomy::date_fract = 0;
 
 		TimerGameTick::counter = 0;
-		_display_opt  = 0;
+		_display_opt.Reset();
 	}
 
 	InitializePatchFlags();
@@ -1811,7 +1807,7 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 	/* Load newgrf sprites
 	 * in each loading stage, (try to) open each file specified in the config
 	 * and load information from it. */
-	for (GrfLoadingStage stage = GrfLoadingStage::LabelScan; stage <= GrfLoadingStage::Activation; stage++) {
+	for (GrfLoadingStage stage : EnumRange(GrfLoadingStage::LabelScan, GrfLoadingStage::End)) {
 		/* Set activated grfs back to will-be-activated between reservation- and activation-stage.
 		 * This ensures that action7/9 conditions 0x06 - 0x0A work correctly. */
 		for (const auto &c : _grfconfig) {
@@ -1819,10 +1815,10 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 		}
 
 		if (stage == GrfLoadingStage::Reserve) {
-			static const std::pair<uint32_t, uint32_t> default_grf_overrides[] = {
-				{ std::byteswap(0x44442202), std::byteswap(0x44440111) }, // UKRS addons modifies UKRS
-				{ std::byteswap(0x6D620402), std::byteswap(0x6D620401) }, // DBSetXL ECS extension modifies DBSetXL
-				{ std::byteswap(0x4D656f20), std::byteswap(0x4D656F17) }, // LV4cut modifies LV4
+			static const std::pair<GrfID, GrfID> default_grf_overrides[] = {
+				{ GrfID{"\x44\x44\x22\x02"}, GrfID{"\x44\x44\x01\x11"} }, // UKRS addons modifies UKRS
+				{ GrfID{"\x6D\x62\x04\x02"}, GrfID{"\x6D\x62\x04\x01"} }, // DBSetXL ECS extension modifies DBSetXL
+				{ GrfID{"\x4D\x65\x6f\x20"}, GrfID{"\x4D\x65\x6F\x17"} }, // LV4cut modifies LV4
 			};
 			for (const auto &grf_override : default_grf_overrides) {
 				SetNewGRFOverride(grf_override.first, grf_override.second);
@@ -1839,7 +1835,7 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 
 			Subdirectory subdir = num_grfs < num_baseset ? Subdirectory::Baseset : Subdirectory::NewGrf;
 			if (!FioCheckFileExists(c->filename, subdir)) {
-				Debug(grf, 0, "NewGRF file is missing '{}'; disabling", c->filename);
+				Debug(Facility::Grf, Severity::Critical, "NewGRF file is missing '{}'; disabling", c->filename);
 				c->status = GRFStatus::NotFound;
 				continue;
 			}
@@ -1848,7 +1844,7 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 
 			if (!c->flags.Test(GRFConfigFlag::Static) && !c->flags.Test(GRFConfigFlag::System)) {
 				if (num_non_static == NETWORK_MAX_GRF_COUNT) {
-					Debug(grf, 0, "'{}' is not loaded as the maximum number of non-static GRFs has been reached", c->filename);
+					Debug(Facility::Grf, Severity::Critical, "'{}' is not loaded as the maximum number of non-static GRFs has been reached", c->filename);
 					c->status = GRFStatus::Disabled;
 					c->errors.emplace_back(STR_NEWGRF_ERROR_MSG_FATAL, 0, STR_NEWGRF_ERROR_TOO_MANY_NEWGRFS_LOADED);
 					continue;
@@ -1866,7 +1862,7 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 				assert(GetFileByGRFID(c->ident.grfid) == _cur_gps.grffile);
 				ClearTemporaryNewGRFData(_cur_gps.grffile);
 				BuildCargoTranslationMap();
-				Debug(sprite, 2, "LoadNewGRF: Currently {} sprites are loaded", _cur_gps.spriteid);
+				Debug(Facility::Sprite, Severity::Warning, "LoadNewGRF: Currently {} sprites are loaded", _cur_gps.spriteid);
 			} else if (stage == GrfLoadingStage::Init && c->flags.Test(GRFConfigFlag::InitOnly)) {
 				/* We're not going to activate this, so free whatever data we allocated */
 				ClearTemporaryNewGRFData(_cur_gps.grffile);
@@ -1883,18 +1879,6 @@ void LoadNewGRF(SpriteID load_index, uint num_baseset)
 
 	/* Call any functions that should be run after GRFs have been loaded. */
 	AfterLoadGRFs();
-
-	/* Now revert back to the original situation */
-	TimerGameCalendar::year = year;
-	TimerGameCalendar::date = date;
-	TimerGameCalendar::date_fract = date_fract;
-
-	TimerGameEconomy::year = economy_year;
-	TimerGameEconomy::date = economy_date;
-	TimerGameEconomy::date_fract = economy_date_fract;
-
-	TimerGameTick::counter = tick_counter;
-	_display_opt  = display_opt;
 }
 
 /**

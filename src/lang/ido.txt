@@ -646,6 +646,8 @@ STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :normala
 ###setting-zero-is-special
 
 
+###setting-zero-is-special
+
 
 ###length 2
 
@@ -658,6 +660,7 @@ STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :normala
 
 
 ###length 2
+
 
 
 
@@ -752,6 +755,8 @@ STR_CONFIG_SETTING_SMALLMAP_LAND_COLOUR_VIOLET                  :Violkolora
 ###length 3
 
 ###setting-zero-is-special
+
+
 
 
 
@@ -1025,8 +1030,6 @@ STR_OBJECT_BUILD_SIZE                                           :{BLACK}Grandeso
 
 # Industry cargoes window
 STR_INDUSTRY_CARGOES_INDUSTRY_CAPTION                           :{WHITE}Industrio-kateno por {STRING} industrio
-STR_INDUSTRY_CARGOES_PRODUCERS                                  :{WHITE}Produktanta industrii
-STR_INDUSTRY_CARGOES_CUSTOMERS                                  :{WHITE}Aceptanta industrii
 STR_INDUSTRY_CARGOES_HOUSES                                     :{WHITE}Domi
 STR_INDUSTRY_DISPLAY_CHAIN                                      :{BLACK}Montras kateno
 STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP                            :{BLACK}Ligilo ad mapeto
@@ -1164,6 +1167,7 @@ STR_LOCAL_AUTHORITY_COMPANY_RATING                              :{YELLOW}{COMPAN
 STR_GOALS_TEXT                                                  :{ORANGE}{STRING}
 
 # Goal question window
+###length 4
 
 # Goal Question button list
 ###length 18
@@ -1410,9 +1414,10 @@ STR_VEHICLE_COMMAND_STARTED                                     :{GREEN}Komencin
 
 
 
+
+
 STR_VEHICLE_DETAIL_TAB_CARGO                                    :{BLACK}Kargajo
 STR_VEHICLE_DETAIL_TAB_INFORMATION                              :{BLACK}Informo
-STR_VEHICLE_DETAIL_TAB_CAPACITIES                               :{BLACK}Kapacesi
 
 
 # Vehicle refit

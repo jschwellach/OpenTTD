@@ -5,14 +5,16 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <https://www.gnu.org/licenses/old-licenses/gpl-2.0>.
  */
 
-/** @file sdl2_opengl_v.h OpenGL backend of the SDL2 video driver. */
+/** @file sdl3_opengl_v.h OpenGL backend of the SDL3 video driver. */
 
-#include "sdl2_v.h"
+#include "sdl3_v.h"
+#include <SDL3/SDL_video.h>
 
 /** The OpenGL video driver for windows. */
 class VideoDriver_SDL_OpenGL : public VideoDriver_SDL_Base {
 public:
-	VideoDriver_SDL_OpenGL() : VideoDriver_SDL_Base(true), gl_context(nullptr), anim_buffer(nullptr) {}
+	/** Create the driver. */
+	VideoDriver_SDL_OpenGL() : VideoDriver_SDL_Base(true, true) {}
 
 	std::optional<std::string_view> Start(const StringList &param) override;
 
@@ -26,9 +28,6 @@ public:
 
 	void PopulateSystemSprites() override;
 
-	bool HasAnimBuffer() override { return true; }
-	uint8_t *GetAnimBuffer() override { return this->anim_buffer; }
-
 	void ToggleVsync(bool vsync) override;
 
 	std::string_view GetName() const override { return "sdl-opengl"; }
@@ -41,8 +40,7 @@ protected:
 	bool CreateMainWindow(uint w, uint h, uint flags) override;
 
 private:
-	void  *gl_context;  ///< OpenGL context.
-	uint8_t *anim_buffer; ///< Animation buffer from OpenGL back-end.
+	SDL_GLContext gl_context = nullptr; ///< OpenGL context.
 
 	std::optional<std::string_view> AllocateContext();
 	void DestroyContext();
@@ -51,6 +49,7 @@ private:
 /** The factory for SDL' OpenGL video driver. */
 class FVideoDriver_SDL_OpenGL : public DriverFactoryBase {
 public:
+	/** Create the factory. */
 	FVideoDriver_SDL_OpenGL() : DriverFactoryBase(Driver::Type::Video, 8, "sdl-opengl", "SDL OpenGL Video Driver") {}
 	std::unique_ptr<Driver> CreateInstance() const override { return std::make_unique<VideoDriver_SDL_OpenGL>(); }
 
